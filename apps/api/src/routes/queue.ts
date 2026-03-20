@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { requireStaff } from '../middleware/auth';
+import { emitQueueUpdated } from '../services/socketService';
 
 const router = Router();
 
@@ -33,6 +34,7 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
     data: { stationId, durationMinutes, position, status: 'WAITING' },
   });
 
+  emitQueueUpdated(stationId);
   res.status(201).json(entry);
 });
 
@@ -71,6 +73,7 @@ router.delete('/:id', requireStaff, async (req: Request, res: Response) => {
     data: { status: 'EXPIRED' },
   });
 
+  emitQueueUpdated(entry.stationId);
   res.json(updated);
 });
 

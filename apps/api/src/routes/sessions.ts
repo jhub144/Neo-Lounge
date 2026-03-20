@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { requireStaff } from '../middleware/auth';
 import { calculatePrice, generateAuthCode } from '../utils/pricing';
+import { emitStationUpdate, emitSessionEnded } from '../services/socketService';
 
 const router = Router();
 
@@ -64,6 +65,8 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
     where: { id: stationId },
     data: { status: 'ACTIVE', currentSessionId: session.id },
   });
+
+  emitStationUpdate(stationId, { status: 'ACTIVE', currentSessionId: session.id });
 
   const eventType = paymentMethod === 'CASH' ? 'CASH_PAYMENT' : 'MPESA_PAYMENT';
   await prisma.securityEvent.createMany({
@@ -153,6 +156,9 @@ router.patch('/:id/end', requireStaff, async (req: Request, res: Response) => {
     where: { id: session.stationId },
     data: { status: 'AVAILABLE', currentSessionId: null },
   });
+
+  emitStationUpdate(session.stationId, { status: 'AVAILABLE', currentSessionId: null });
+  emitSessionEnded(session.stationId, id);
 
   await prisma.securityEvent.create({
     data: {
