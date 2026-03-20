@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import staffRouter from './routes/staff';
 import stationsRouter from './routes/stations';
 import sessionsRouter from './routes/sessions';
+import queueRouter from './routes/queue';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/staff', staffRouter);
 app.use('/api/stations', stationsRouter);
 app.use('/api/sessions', sessionsRouter);
+app.use('/api/queue', queueRouter);
 
 app.listen(PORT, () => {
   console.log(`API server running on port ${PORT}`);
