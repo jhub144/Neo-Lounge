@@ -5,6 +5,9 @@ import staffRouter from './routes/staff';
 import stationsRouter from './routes/stations';
 import sessionsRouter from './routes/sessions';
 import queueRouter from './routes/queue';
+import settingsRouter from './routes/settings';
+import eventsRouter from './routes/events';
+import dashboardRouter from './routes/dashboard';
 
 dotenv.config();
 
@@ -22,6 +25,9 @@ app.use('/api/staff', staffRouter);
 app.use('/api/stations', stationsRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/queue', queueRouter);
+app.use('/api/settings', settingsRouter);
+app.use('/api/events', eventsRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 app.listen(PORT, () => {
   console.log(`API server running on port ${PORT}`);
