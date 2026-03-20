@@ -166,4 +166,162 @@ router.patch('/:id/end', requireStaff, async (req: Request, res: Response) => {
   res.json(updated);
 });
 
+// PATCH /api/sessions/:id/extend
+router.patch('/:id/extend', requireStaff, async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id as string);
+  if (isNaN(id)) {
+    res.status(404).json({ error: 'Session not found' });
+    return;
+  }
+
+  const { durationMinutes, paymentMethod } = req.body as {
+    durationMinutes?: number;
+    paymentMethod?: string;
+  };
+
+  if (!durationMinutes || !paymentMethod) {
+    res.status(400).json({ error: 'durationMinutes and paymentMethod are required' });
+    return;
+  }
+
+  const session = await prisma.session.findUnique({ where: { id } });
+  if (!session) {
+    res.status(404).json({ error: 'Session not found' });
+    return;
+  }
+  if (session.status !== 'ACTIVE') {
+    res.status(400).json({ error: 'Session is not active' });
+    return;
+  }
+
+  const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+  const rate = settings?.baseHourlyRate ?? 300;
+  const amount = calculatePrice(durationMinutes, rate);
+  const staffPin = req.staff!.pin;
+  const txStatus = paymentMethod === 'CASH' ? 'COMPLETED' : 'PENDING';
+
+  await prisma.transaction.create({
+    data: {
+      sessionId: id,
+      amount,
+      method: paymentMethod as any,
+      status: txStatus as any,
+      staffPin,
+    },
+  });
+
+  const updated = await prisma.session.update({
+    where: { id },
+    data: { durationMinutes: { increment: durationMinutes } },
+    include: { transactions: true, games: true },
+  });
+
+  await prisma.securityEvent.create({
+    data: {
+      type: 'SESSION_EXTENDED',
+      description: `Session ${id} extended by ${durationMinutes} minutes`,
+      staffPin,
+      stationId: session.stationId,
+    },
+  });
+
+  res.json(updated);
+});
+
+// POST /api/sessions/:id/transfer
+router.post('/:id/transfer', requireStaff, async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id as string);
+  if (isNaN(id)) {
+    res.status(404).json({ error: 'Session not found' });
+    return;
+  }
+
+  const { targetStationId } = req.body as { targetStationId?: number };
+  if (!targetStationId) {
+    res.status(400).json({ error: 'targetStationId is required' });
+    return;
+  }
+
+  const [session, targetStation] = await Promise.all([
+    prisma.session.findUnique({
+      where: { id },
+      include: { games: { where: { endTime: null } } },
+    }),
+    prisma.station.findUnique({ where: { id: targetStationId } }),
+  ]);
+
+  if (!session) {
+    res.status(404).json({ error: 'Session not found' });
+    return;
+  }
+  if (session.status !== 'ACTIVE') {
+    res.status(400).json({ error: 'Session is not active' });
+    return;
+  }
+  if (!targetStation) {
+    res.status(404).json({ error: 'Target station not found' });
+    return;
+  }
+  if (targetStation.status !== 'AVAILABLE') {
+    res.status(400).json({ error: 'Target station is not available' });
+    return;
+  }
+
+  const now = new Date();
+  const elapsedMinutes = Math.floor((now.getTime() - new Date(session.startTime).getTime()) / 60000);
+  const remainingMinutes = Math.max(0, session.durationMinutes - elapsedMinutes);
+  const staffPin = req.staff!.pin;
+
+  // End active games on source session
+  if (session.games.length > 0) {
+    await prisma.game.updateMany({
+      where: { sessionId: id, endTime: null },
+      data: { endTime: now, endMethod: 'SESSION_END' },
+    });
+  }
+
+  // End source session
+  await prisma.session.update({
+    where: { id },
+    data: { status: 'COMPLETED', endTime: now },
+  });
+
+  // Free source station
+  await prisma.station.update({
+    where: { id: session.stationId },
+    data: { status: 'AVAILABLE', currentSessionId: null },
+  });
+
+  // Create new session on target
+  const newSession = await prisma.session.create({
+    data: {
+      stationId: targetStationId,
+      staffPin,
+      durationMinutes: remainingMinutes,
+      authCode: generateAuthCode(),
+      status: 'ACTIVE',
+      games: { create: { startTime: now } },
+    },
+    include: { transactions: true, games: true },
+  });
+
+  // Activate target station
+  await prisma.station.update({
+    where: { id: targetStationId },
+    data: { status: 'ACTIVE', currentSessionId: newSession.id },
+  });
+
+  await prisma.securityEvent.create({
+    data: {
+      type: 'SESSION_TRANSFER',
+      description: `Session ${id} transferred to station ${targetStationId} with ${remainingMinutes} minutes remaining`,
+      staffPin,
+      stationId: targetStationId,
+      metadata: { fromSessionId: id, toSessionId: newSession.id, remainingMinutes },
+    },
+  });
+
+  res.status(201).json(newSession);
+});
+
 export default router;

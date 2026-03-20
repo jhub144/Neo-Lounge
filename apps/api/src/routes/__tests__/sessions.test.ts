@@ -11,6 +11,7 @@ jest.mock('../../lib/prisma', () => ({
     securityEvent: { create: jest.fn(), createMany: jest.fn() },
     game: { updateMany: jest.fn() },
     staff: { findFirst: jest.fn() },
+    transaction: { create: jest.fn() },
   },
 }));
 
@@ -201,5 +202,106 @@ describe('PATCH /api/sessions/:id/end', () => {
       .set('x-staff-pin', '0000');
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe('PATCH /api/sessions/:id/extend', () => {
+  test('extends session and creates transaction', async () => {
+    (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
+    (mp.session.findUnique as jest.Mock).mockResolvedValue(makeSession());
+    (mp.settings.findUnique as jest.Mock).mockResolvedValue(settings);
+    (mp.transaction.create as jest.Mock).mockResolvedValue({});
+    (mp.session.update as jest.Mock).mockResolvedValue(makeSession({ durationMinutes: 90 }));
+    (mp.securityEvent.create as jest.Mock).mockResolvedValue({});
+
+    const res = await request(app)
+      .patch('/api/sessions/1/extend')
+      .set('x-staff-pin', '0000')
+      .send({ durationMinutes: 30, paymentMethod: 'CASH' });
+
+    expect(res.status).toBe(200);
+    expect(mp.transaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ amount: 150, method: 'CASH', status: 'COMPLETED' }),
+      })
+    );
+    expect(mp.securityEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ type: 'SESSION_EXTENDED' }),
+      })
+    );
+  });
+
+  test('returns 400 if session is not active', async () => {
+    (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
+    (mp.session.findUnique as jest.Mock).mockResolvedValue(makeSession({ status: 'COMPLETED' }));
+
+    const res = await request(app)
+      .patch('/api/sessions/1/extend')
+      .set('x-staff-pin', '0000')
+      .send({ durationMinutes: 30, paymentMethod: 'CASH' });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('returns 401 without staff pin', async () => {
+    const res = await request(app)
+      .patch('/api/sessions/1/extend')
+      .send({ durationMinutes: 30, paymentMethod: 'CASH' });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /api/sessions/:id/transfer', () => {
+  const targetStation = { id: 2, name: 'Station 2', status: 'AVAILABLE', currentSessionId: null };
+  const occupiedStation = { id: 2, name: 'Station 2', status: 'ACTIVE', currentSessionId: 5 };
+
+  test('transfers session to available station', async () => {
+    (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
+    (mp.session.findUnique as jest.Mock).mockResolvedValue(makeSession());
+    (mp.station.findUnique as jest.Mock).mockResolvedValue(targetStation);
+    (mp.game.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+    (mp.session.update as jest.Mock).mockResolvedValue(makeSession({ status: 'COMPLETED' }));
+    (mp.station.update as jest.Mock).mockResolvedValue({});
+    (mp.session.create as jest.Mock).mockResolvedValue(makeSession({ id: 2, stationId: 2 }));
+    (mp.securityEvent.create as jest.Mock).mockResolvedValue({});
+
+    const res = await request(app)
+      .post('/api/sessions/1/transfer')
+      .set('x-staff-pin', '0000')
+      .send({ targetStationId: 2 });
+
+    expect(res.status).toBe(201);
+    expect(mp.session.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ stationId: 2 }),
+      })
+    );
+    expect(mp.securityEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ type: 'SESSION_TRANSFER' }),
+      })
+    );
+  });
+
+  test('returns 400 if target station is occupied', async () => {
+    (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
+    (mp.session.findUnique as jest.Mock).mockResolvedValue(makeSession());
+    (mp.station.findUnique as jest.Mock).mockResolvedValue(occupiedStation);
+
+    const res = await request(app)
+      .post('/api/sessions/1/transfer')
+      .set('x-staff-pin', '0000')
+      .send({ targetStationId: 2 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/not available/i);
+  });
+
+  test('returns 401 without staff pin', async () => {
+    const res = await request(app)
+      .post('/api/sessions/1/transfer')
+      .send({ targetStationId: 2 });
+    expect(res.status).toBe(401);
   });
 });
