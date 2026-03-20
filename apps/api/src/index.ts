@@ -11,6 +11,7 @@ import settingsRouter from './routes/settings';
 import eventsRouter from './routes/events';
 import dashboardRouter from './routes/dashboard';
 import { initSocketService } from './services/socketService';
+import { startTimerService } from './services/timerService';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ if (process.env.NODE_ENV !== 'test') {
   httpServer.listen(PORT, () => {
     console.log(`API server running on port ${PORT}`);
   });
+  startTimerService();
 }
 
 export default app;
