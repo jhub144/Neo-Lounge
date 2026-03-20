@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import staffRouter from './routes/staff';
+import stationsRouter from './routes/stations';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/staff', staffRouter);
+app.use('/api/stations', stationsRouter);
 
 app.listen(PORT, () => {
   console.log(`API server running on port ${PORT}`);
