@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma:*)",
+      "Bash(pg_lsclusters)",
+      "Bash(service postgresql:*)",
+      "Bash(sudo service:*)"
+    ]
+  }
+}

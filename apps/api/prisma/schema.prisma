@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum StationStatus {
+  AVAILABLE
+  ACTIVE
+  PENDING
+  FAULT
+}
+
+enum SessionStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  POWER_INTERRUPTED
+}
+
+enum PaymentMethod {
+  CASH
+  MPESA
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  TIMEOUT
+}
+
+enum GameEndMethod {
+  AI_DETECTED
+  MANUAL_BUTTON
+  SESSION_END
+}
+
+enum TriggerType {
+  CROWD_ROAR
+  WHISTLE
+  OTHER
+}
+
+enum SecurityEventType {
+  CASH_PAYMENT
+  MPESA_PAYMENT
+  MPESA_TIMEOUT
+  SESSION_START
+  SESSION_END
+  SESSION_EXTENDED
+  HARDWARE_FAULT
+  FREE_TIME_GRANTED
+  ADMIN_OVERRIDE
+  SHIFT_START
+  SHIFT_END
+  SESSION_TRANSFER
+  POWER_LOSS
+  POWER_RESTORE
+  STATION_FAULT
+  SYSTEM_STARTUP
+}
+
+enum StaffRole {
+  OWNER
+  STAFF
+}
+
+enum QueueStatus {
+  WAITING
+  NOTIFIED
+  EXPIRED
+  CONVERTED
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model Station {
+  id               Int           @id @default(autoincrement())
+  name             String
+  status           StationStatus @default(AVAILABLE)
+  currentSessionId Int?
+  adbAddress       String        @default("")
+  tuyaDeviceId     String        @default("")
+  captureDevice    String        @default("")
+
+  currentSession Session?       @relation("CurrentSession", fields: [currentSessionId], references: [id])
+  sessions       Session[]      @relation("StationSessions")
+  queue          StationQueue[]
+}
+
+model Session {
+  id                   Int           @id @default(autoincrement())
+  stationId            Int
+  staffPin             String
+  startTime            DateTime      @default(now())
+  endTime              DateTime?
+  durationMinutes      Int
+  remainingAtPowerLoss Int?
+  status               SessionStatus @default(ACTIVE)
+  authCode             String        @unique
+
+  station      Station       @relation("StationSessions", fields: [stationId], references: [id])
+  stationsCurrent Station[]  @relation("CurrentSession")
+  transactions Transaction[]
+  games        Game[]
+  replayClips  ReplayClip[]
+}
+
+model Transaction {
+  id           Int               @id @default(autoincrement())
+  sessionId    Int
+  amount       Int
+  method       PaymentMethod
+  status       TransactionStatus @default(PENDING)
+  mpesaReceipt String?
+  staffPin     String
+  createdAt    DateTime          @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id])
+}
+
+model Game {
+  id        Int            @id @default(autoincrement())
+  sessionId Int
+  startTime DateTime       @default(now())
+  endTime   DateTime?
+  endMethod GameEndMethod?
+
+  session     Session      @relation(fields: [sessionId], references: [id])
+  replayClips ReplayClip[]
+}
+
+model ReplayClip {
+  id               Int         @id @default(autoincrement())
+  gameId           Int
+  sessionId        Int
+  filePath         String
+  triggerType      TriggerType
+  triggerTimestamp DateTime
+  createdAt        DateTime    @default(now())
+  expiresAt        DateTime
+  stitchedReelPath String?
+
+  game    Game    @relation(fields: [gameId], references: [id])
+  session Session @relation(fields: [sessionId], references: [id])
+}
+
+model SecurityEvent {
+  id             Int               @id @default(autoincrement())
+  type           SecurityEventType
+  description    String
+  staffPin       String?
+  stationId      Int?
+  timestamp      DateTime          @default(now())
+  metadata       Json?
+  clipsGenerated Boolean           @default(true)
+
+  securityClips SecurityClip[]
+}
+
+model SecurityClip {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  cameraId  Int
+  filePath  String
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime @default(now())
+
+  event  SecurityEvent  @relation(fields: [eventId], references: [id])
+  camera SecurityCamera @relation(fields: [cameraId], references: [id])
+}
+
+model SecurityCamera {
+  id       Int    @id @default(autoincrement())
+  name     String
+  rtspUrl  String @default("")
+  isOnline Boolean @default(false)
+  location String  @default("")
+
+  securityClips SecurityClip[]
+}
+
+model Staff {
+  id       Int       @id @default(autoincrement())
+  name     String
+  pin      String    @unique
+  role     StaffRole @default(STAFF)
+  isActive Boolean   @default(true)
+}
+
+model Settings {
+  id                       Int     @id @default(autoincrement())
+  baseHourlyRate           Int     @default(300)
+  openingTime              String  @default("08:00")
+  closingTime              String  @default("22:00")
+  replayTTLMinutes         Int     @default(60)
+  powerSaveBrightness      Int     @default(50)
+  yamnetConfidenceThreshold Float  @default(0.7)
+  clipBufferBefore         Int     @default(10)
+  clipBufferAfter          Int     @default(15)
+  clipCooldownSeconds      Int     @default(45)
+  securityClipBeforeMinutes Int    @default(5)
+  securityClipAfterMinutes  Int    @default(5)
+  securityRetentionDays    Int     @default(14)
+}
+
+model StationQueue {
+  id              Int         @id @default(autoincrement())
+  stationId       Int
+  position        Int
+  durationMinutes Int
+  createdAt       DateTime    @default(now())
+  status          QueueStatus @default(WAITING)
+
+  station Station @relation(fields: [stationId], references: [id])
+}
