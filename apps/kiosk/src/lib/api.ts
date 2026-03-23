@@ -26,10 +26,28 @@ export interface Settings {
   replayTTLMinutes: number;
 }
 
+export interface Session {
+  id: number;
+  stationId: number;
+  durationMinutes: number;
+  authCode: string;
+  status: string;
+}
+
 export function getStations(pin?: string): Promise<Station[]> {
   return apiFetch<Station[]>('/api/stations', pin);
 }
 
 export function getSettings(pin?: string): Promise<Settings> {
   return apiFetch<Settings>('/api/settings', pin);
+}
+
+export function createSession(
+  pin: string,
+  body: { stationId: number; durationMinutes: number; paymentMethod: string }
+): Promise<Session> {
+  return apiFetch<Session>('/api/sessions', pin, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }

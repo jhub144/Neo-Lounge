@@ -7,11 +7,17 @@ const STATUS_STYLES: Record<Station['status'], { label: string; badge: string }>
   FAULT:     { label: 'Fault',     badge: 'bg-red-500 text-white' },
 };
 
-export default function StationCard({ station }: { station: Station }) {
+export default function StationCard({ station, onClick }: { station: Station; onClick?: () => void }) {
   const { label, badge } = STATUS_STYLES[station.status] ?? STATUS_STYLES.FAULT;
+  const clickable = station.status === 'AVAILABLE';
 
   return (
-    <div className="bg-[#1E293B] border border-white/10 rounded-xl p-6 flex flex-col gap-4 cursor-pointer transition-colors hover:bg-[#263548] hover:border-white/20">
+    <div
+      onClick={clickable ? onClick : undefined}
+      className={`bg-[#1E293B] border border-white/10 rounded-xl p-6 flex flex-col gap-4 transition-colors ${
+        clickable ? 'cursor-pointer hover:bg-[#263548] hover:border-white/20' : 'cursor-default opacity-80'
+      }`}
+    >
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">{station.name}</h2>
         <span className={`text-xs font-bold px-3 py-1 rounded-full ${badge}`}>
