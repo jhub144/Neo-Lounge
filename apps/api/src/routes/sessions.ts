@@ -3,6 +3,9 @@ import prisma from '../lib/prisma';
 import { requireStaff } from '../middleware/auth';
 import { calculatePrice, generateAuthCode } from '../utils/pricing';
 import { emitStationUpdate, emitSessionEnded } from '../services/socketService';
+import { adbService } from '../services/adbService';
+import { tuyaService } from '../services/tuyaService';
+import { captureService } from '../services/captureService';
 
 const router = Router();
 
@@ -67,6 +70,11 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
   });
 
   emitStationUpdate(stationId, { status: 'ACTIVE', currentSessionId: session.id });
+
+  // Hardware activation (fire-and-forget)
+  adbService.switchToHDMI(station.adbAddress).catch(() => {});
+  tuyaService.activateSync(station.tuyaDeviceId).catch(() => {});
+  captureService.startCapture(stationId, station.captureDevice).catch(() => {});
 
   const eventType = paymentMethod === 'CASH' ? 'CASH_PAYMENT' : 'MPESA_PAYMENT';
   await prisma.securityEvent.createMany({
@@ -159,6 +167,12 @@ router.patch('/:id/end', requireStaff, async (req: Request, res: Response) => {
 
   emitStationUpdate(session.stationId, { status: 'AVAILABLE', currentSessionId: null });
   emitSessionEnded(session.stationId, id);
+
+  // Hardware deactivation (fire-and-forget)
+  const src = await prisma.station.findUnique({ where: { id: session.stationId } });
+  adbService.switchToScreensaver(src?.adbAddress ?? '').catch(() => {});
+  tuyaService.setAmbientMode(src?.tuyaDeviceId ?? '').catch(() => {});
+  captureService.stopCapture(session.stationId).catch(() => {});
 
   await prisma.securityEvent.create({
     data: {
