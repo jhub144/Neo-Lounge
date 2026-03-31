@@ -8,6 +8,7 @@ import {
   endSession,
   grantFreeTime,
   transferSession,
+  addToQueue,
   type Station,
   type Settings,
   type SessionDetail,
@@ -28,7 +29,7 @@ interface Props {
   onExtend: (sessionId: number) => void;
 }
 
-type FaultView = 'menu' | 'free-time' | 'transfer';
+type FaultView = 'menu' | 'free-time' | 'transfer' | 'queue';
 
 export default function ActiveSessionPanel({ station, remainingSeconds, onClose, onSuccess, onExtend }: Props) {
   const { pin } = useAuth();
@@ -44,6 +45,7 @@ export default function ActiveSessionPanel({ station, remainingSeconds, onClose,
   const [stationsLoading, setStationsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [faultError, setFaultError] = useState('');
+  const [queueDuration, setQueueDuration] = useState('');
 
   useEffect(() => {
     if (!station.currentSession) return;
@@ -108,6 +110,21 @@ export default function ActiveSessionPanel({ station, remainingSeconds, onClose,
       onSuccess();
     } catch (e) {
       setFaultError(e instanceof Error ? e.message : 'Failed to transfer session');
+      setSubmitting(false);
+    }
+  }
+
+  async function handleAddToQueue() {
+    const mins = parseInt(queueDuration);
+    if (!mins || mins <= 0) { setFaultError('Enter a valid duration'); return; }
+    setSubmitting(true);
+    setFaultError('');
+    try {
+      await addToQueue(pin, { stationId: station.id, durationMinutes: mins });
+      setFaultView(null);
+      onSuccess();
+    } catch (e) {
+      setFaultError(e instanceof Error ? e.message : 'Failed to add to queue');
       setSubmitting(false);
     }
   }
@@ -187,6 +204,12 @@ export default function ActiveSessionPanel({ station, remainingSeconds, onClose,
                   className="flex-1 py-2 rounded-xl border border-white/10 text-xs text-white/50 hover:text-white hover:border-white/30 transition-colors"
                 >
                   Transfer
+                </button>
+                <button
+                  onClick={() => { setFaultView('queue'); setFaultError(''); setQueueDuration(''); }}
+                  className="flex-1 py-2 rounded-xl border border-purple-500/30 bg-purple-600/10 text-xs text-purple-300 hover:text-purple-200 hover:bg-purple-600/20 transition-colors"
+                >
+                  Add to Queue
                 </button>
               </div>
             </>
@@ -300,6 +323,41 @@ export default function ActiveSessionPanel({ station, remainingSeconds, onClose,
                   </div>
                 )}
                 {faultError && <p className="text-red-400 text-sm">{faultError}</p>}
+                <button
+                  onClick={() => setFaultView(null)}
+                  className="w-full py-2 rounded-xl border border-white/10 text-xs text-white/50 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+
+            {faultView === 'queue' && (
+              <>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setFaultView(null)} className="text-white/40 hover:text-white text-lg">←</button>
+                  <h3 className="text-lg font-bold">Add to Queue</h3>
+                </div>
+                <p className="text-sm text-white/50">Reserve space after this session</p>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-white/40 uppercase tracking-wider">Duration (minutes)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={queueDuration}
+                    onChange={e => setQueueDuration(e.target.value)}
+                    placeholder="e.g. 60"
+                    className="bg-[#0F172A] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-white/30"
+                  />
+                </div>
+                {faultError && <p className="text-red-400 text-sm">{faultError}</p>}
+                <button
+                  onClick={handleAddToQueue}
+                  disabled={submitting}
+                  className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-sm font-semibold transition-colors"
+                >
+                  {submitting ? 'Adding…' : 'Confirm placement'}
+                </button>
                 <button
                   onClick={() => setFaultView(null)}
                   className="w-full py-2 rounded-xl border border-white/10 text-xs text-white/50 hover:text-white transition-colors"

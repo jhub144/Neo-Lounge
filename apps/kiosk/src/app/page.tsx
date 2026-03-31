@@ -8,6 +8,7 @@ import BookingModal from '@/components/BookingModal';
 import { getStations, getSettings, type Station, type Settings } from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import ActiveSessionPanel from '@/components/ActiveSessionPanel';
+import ShiftLog from '@/components/ShiftLog';
 
 export default function Home() {
   const { isLoggedIn, staffName, pin, logout } = useAuth();
@@ -37,7 +38,7 @@ export default function Home() {
   if (!isLoggedIn) return <PinLogin />;
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen p-8 max-w-7xl mx-auto">
       <header className="mb-10 flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">PlayStation Lounge</h1>
         <div className="flex items-center gap-4">
@@ -51,20 +52,26 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="grid grid-cols-2 gap-6 max-w-3xl">
-        {stations.map((station) => (
-          <StationCard
-            key={station.id}
-            station={station}
-            onClick={() => {
-              if (station.status === 'ACTIVE') setActiveStation(station);
-              else setSelectedStation(station);
-            }}
-            remainingSeconds={ticks[station.id]}
-            isWarning={warnings[station.id]}
-          />
-        ))}
-      </main>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <main className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 content-start">
+          {stations.map((station) => (
+            <StationCard
+              key={station.id}
+              station={station}
+              onClick={() => {
+                if (station.status === 'ACTIVE') setActiveStation(station);
+                else setSelectedStation(station);
+              }}
+              remainingSeconds={ticks[station.id]}
+              isWarning={warnings[station.id]}
+            />
+          ))}
+        </main>
+        
+        <aside className="lg:col-span-1 h-[calc(100vh-160px)] sticky top-8">
+          <ShiftLog />
+        </aside>
+      </div>
 
       {selectedStation && settings && (
         <BookingModal

@@ -1,17 +1,24 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma';
-import { requireOwner } from '../middleware/auth';
+import { requireOwner, requireStaff } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/', requireOwner, async (_req: Request, res: Response) => {
+// Allow STAFF to see the dashboard too, not just OWNER, as it's the ShiftLog
+router.get('/', requireStaff, async (_req: Request, res: Response) => {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const [completedTxs, activeSessions, recentEvents, stations] = await Promise.all([
+  const [completedTxs, allTxs, activeSessions, recentEvents, stations] = await Promise.all([
     prisma.transaction.findMany({
       where: { status: 'COMPLETED', createdAt: { gte: startOfDay } },
       include: { session: { select: { stationId: true } } },
+    }),
+    prisma.transaction.findMany({
+      where: { createdAt: { gte: startOfDay } },
+      include: { session: { select: { stationId: true, station: { select: { name: true } } } } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
     }),
     prisma.session.findMany({
       where: { status: 'ACTIVE' },
@@ -39,9 +46,19 @@ router.get('/', requireOwner, async (_req: Request, res: Response) => {
     revenue: revenueByStation[s.id] ?? 0,
   }));
 
+  const recentTransactions = allTxs.map(t => ({
+    id: t.id,
+    amount: t.amount,
+    method: t.method,
+    status: t.status,
+    createdAt: t.createdAt,
+    stationName: t.session.station.name,
+  }));
+
   res.json({
     todayRevenue,
     todayRevenueByStation,
+    recentTransactions,
     activeSessions: activeSessions.map((s) => ({
       id: s.id,
       stationId: s.stationId,

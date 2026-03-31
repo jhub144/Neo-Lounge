@@ -102,3 +102,41 @@ export function transferSession(
     body: JSON.stringify(body),
   });
 }
+
+export interface QueueEntry {
+  id: number;
+  stationId: number;
+  position: number;
+  durationMinutes: number;
+  status: string;
+}
+
+export interface DashboardResponse {
+  todayRevenue: number;
+  recentTransactions: {
+    id: number;
+    amount: number;
+    method: string;
+    status: string;
+    createdAt: string;
+    stationName: string;
+  }[];
+}
+
+export function getDashboard(pin: string): Promise<DashboardResponse> {
+  return apiFetch<DashboardResponse>('/api/dashboard', pin);
+}
+
+export function addToQueue(
+  pin: string,
+  body: { stationId: number; durationMinutes: number }
+): Promise<QueueEntry> {
+  return apiFetch<QueueEntry>('/api/queue', pin, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function getQueue(stationId: number, pin?: string): Promise<QueueEntry[]> {
+  return apiFetch<QueueEntry[]>(`/api/queue/${stationId}`, pin);
+}

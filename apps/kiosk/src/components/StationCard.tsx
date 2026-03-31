@@ -37,9 +37,17 @@ export default function StationCard({
     >
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">{station.name}</h2>
-        <span className={`text-xs font-bold px-3 py-1 rounded-full ${badge}`}>
-          {label}
-        </span>
+        <div className="flex items-center gap-2">
+          {station.queueCount > 0 && (
+            <span className="text-xs font-bold px-2 py-1 flex items-center gap-1 rounded-full bg-purple-600/20 text-purple-300 border border-purple-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+              {station.queueCount} in Queue
+            </span>
+          )}
+          <span className={`text-xs font-bold px-3 py-1 rounded-full ${badge}`}>
+            {label}
+          </span>
+        </div>
       </div>
       <p className="text-sm text-white/40">
         {station.status === 'ACTIVE' && station.currentSession
