@@ -248,6 +248,52 @@ router.patch('/:id/extend', requireStaff, async (req: Request, res: Response) =>
   res.json(updated);
 });
 
+// POST /api/sessions/:id/grant-free-time
+router.post('/:id/grant-free-time', requireStaff, async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id as string);
+  if (isNaN(id)) {
+    res.status(404).json({ error: 'Session not found' });
+    return;
+  }
+
+  const { durationMinutes } = req.body as { durationMinutes?: number };
+  if (!durationMinutes || durationMinutes <= 0) {
+    res.status(400).json({ error: 'durationMinutes is required and must be positive' });
+    return;
+  }
+
+  const session = await prisma.session.findUnique({ where: { id } });
+  if (!session) {
+    res.status(404).json({ error: 'Session not found' });
+    return;
+  }
+  if (session.status !== 'ACTIVE') {
+    res.status(400).json({ error: 'Session is not active' });
+    return;
+  }
+
+  const staffPin = req.staff!.pin;
+
+  const updated = await prisma.session.update({
+    where: { id },
+    data: { durationMinutes: { increment: durationMinutes } },
+    include: { transactions: true, games: true },
+  });
+
+  emitStationUpdate(session.stationId, { currentSessionId: id });
+
+  await prisma.securityEvent.create({
+    data: {
+      type: 'FREE_TIME_GRANTED',
+      description: `${durationMinutes} minutes of free time granted on session ${id}`,
+      staffPin,
+      stationId: session.stationId,
+    },
+  });
+
+  res.json(updated);
+});
+
 // POST /api/sessions/:id/transfer
 router.post('/:id/transfer', requireStaff, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);

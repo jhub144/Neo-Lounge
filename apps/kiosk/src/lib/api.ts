@@ -80,3 +80,25 @@ export function extendSession(
     body: JSON.stringify(body),
   });
 }
+
+export function grantFreeTime(
+  id: number,
+  pin: string,
+  body: { durationMinutes: number }
+): Promise<Session> {
+  return apiFetch<Session>(`/api/sessions/${id}/grant-free-time`, pin, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function transferSession(
+  id: number,
+  pin: string,
+  body: { targetStationId: number }
+): Promise<Session> {
+  return apiFetch<Session>(`/api/sessions/${id}/transfer`, pin, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
