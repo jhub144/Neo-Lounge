@@ -12,10 +12,8 @@ export interface Station {
   id: number;
   name: string;
   status: 'AVAILABLE' | 'ACTIVE' | 'PENDING' | 'FAULT';
-  currentSessionId: number | null;
-  adbAddress: string;
-  tuyaDeviceId: string;
-  captureDevice: string;
+  currentSession: { id: number } | null;
+  queueCount: number;
 }
 
 export interface Settings {
@@ -34,6 +32,18 @@ export interface Session {
   status: string;
 }
 
+export interface Transaction {
+  id: number;
+  amount: number;
+  method: string;
+  status: string;
+}
+
+export interface SessionDetail extends Session {
+  startTime: string;
+  transactions: Transaction[];
+}
+
 export function getStations(pin?: string): Promise<Station[]> {
   return apiFetch<Station[]>('/api/stations', pin);
 }
@@ -42,12 +52,31 @@ export function getSettings(pin?: string): Promise<Settings> {
   return apiFetch<Settings>('/api/settings', pin);
 }
 
+export function getSession(id: number, pin: string): Promise<SessionDetail> {
+  return apiFetch<SessionDetail>(`/api/sessions/${id}`, pin);
+}
+
 export function createSession(
   pin: string,
   body: { stationId: number; durationMinutes: number; paymentMethod: string }
 ): Promise<Session> {
   return apiFetch<Session>('/api/sessions', pin, {
     method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function endSession(id: number, pin: string): Promise<Session> {
+  return apiFetch<Session>(`/api/sessions/${id}/end`, pin, { method: 'PATCH' });
+}
+
+export function extendSession(
+  id: number,
+  pin: string,
+  body: { durationMinutes: number; paymentMethod: string }
+): Promise<Session> {
+  return apiFetch<Session>(`/api/sessions/${id}/extend`, pin, {
+    method: 'PATCH',
     body: JSON.stringify(body),
   });
 }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { createSession, type Station, type Settings } from '@/lib/api';
+import { createSession, extendSession, type Station, type Settings } from '@/lib/api';
 
 const PRESET_DURATIONS = [5, 10, 20, 30, 40, 60];
 
@@ -23,9 +23,10 @@ interface Props {
   settings: Settings;
   onClose: () => void;
   onSuccess: () => void;
+  extensionSessionId?: number;
 }
 
-export default function BookingModal({ station, settings, onClose, onSuccess }: Props) {
+export default function BookingModal({ station, settings, onClose, onSuccess, extensionSessionId }: Props) {
   const { pin } = useAuth();
   const rate = settings.baseHourlyRate;
 
@@ -52,10 +53,14 @@ export default function BookingModal({ station, settings, onClose, onSuccess }: 
     setLoading(true);
     setError('');
     try {
-      await createSession(pin, { stationId: station.id, durationMinutes: duration, paymentMethod: payment });
+      if (extensionSessionId != null) {
+        await extendSession(extensionSessionId, pin, { durationMinutes: duration, paymentMethod: payment });
+      } else {
+        await createSession(pin, { stationId: station.id, durationMinutes: duration, paymentMethod: payment });
+      }
       onSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create session');
+      setError(e instanceof Error ? e.message : extensionSessionId != null ? 'Failed to extend session' : 'Failed to create session');
     } finally {
       setLoading(false);
     }
@@ -67,7 +72,7 @@ export default function BookingModal({ station, settings, onClose, onSuccess }: 
         className="bg-[#1E293B] border border-white/10 rounded-2xl p-6 w-full max-w-md flex flex-col gap-5"
         onClick={e => e.stopPropagation()}
       >
-        <h2 className="text-xl font-bold">{station.name} — New Session</h2>
+        <h2 className="text-xl font-bold">{station.name} — {extensionSessionId != null ? 'Extend Session' : 'New Session'}</h2>
 
         {/* Duration presets */}
         <div>

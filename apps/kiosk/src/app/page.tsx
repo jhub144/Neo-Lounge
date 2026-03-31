@@ -1,27 +1,38 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import PinLogin from '@/components/PinLogin';
 import StationCard from '@/components/StationCard';
 import BookingModal from '@/components/BookingModal';
 import { getStations, getSettings, type Station, type Settings } from '@/lib/api';
+import { useSocket } from '@/hooks/useSocket';
+import ActiveSessionPanel from '@/components/ActiveSessionPanel';
 
 export default function Home() {
   const { isLoggedIn, staffName, pin, logout } = useAuth();
   const [stations, setStations] = useState<Station[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+  const [activeStation, setActiveStation] = useState<Station | null>(null);
+  const [extendSessionId, setExtendSessionId] = useState<number | null>(null);
 
-  function refreshStations() {
+  const refreshStations = useCallback(() => {
+    if (!pin) return;
     getStations(pin).then(setStations).catch(console.error);
-  }
+  }, [pin]);
+
+  const { ticks, warnings } = useSocket({
+    onStationUpdated: refreshStations,
+    onQueueUpdated: refreshStations,
+    onSessionEnded: refreshStations,
+  });
 
   useEffect(() => {
     if (!isLoggedIn) return;
     refreshStations();
     getSettings(pin).then(setSettings).catch(console.error);
-  }, [isLoggedIn, pin]);
+  }, [isLoggedIn, pin, refreshStations]);
 
   if (!isLoggedIn) return <PinLogin />;
 
@@ -45,7 +56,12 @@ export default function Home() {
           <StationCard
             key={station.id}
             station={station}
-            onClick={() => setSelectedStation(station)}
+            onClick={() => {
+              if (station.status === 'ACTIVE') setActiveStation(station);
+              else setSelectedStation(station);
+            }}
+            remainingSeconds={ticks[station.id]}
+            isWarning={warnings[station.id]}
           />
         ))}
       </main>
@@ -57,6 +73,34 @@ export default function Home() {
           onClose={() => setSelectedStation(null)}
           onSuccess={() => {
             setSelectedStation(null);
+            refreshStations();
+          }}
+        />
+      )}
+
+      {activeStation && settings && extendSessionId == null && (
+        <ActiveSessionPanel
+          station={activeStation}
+          settings={settings}
+          remainingSeconds={ticks[activeStation.id]}
+          onClose={() => setActiveStation(null)}
+          onSuccess={() => {
+            setActiveStation(null);
+            refreshStations();
+          }}
+          onExtend={(sessionId) => setExtendSessionId(sessionId)}
+        />
+      )}
+
+      {activeStation && settings && extendSessionId != null && (
+        <BookingModal
+          station={activeStation}
+          settings={settings}
+          extensionSessionId={extendSessionId}
+          onClose={() => setExtendSessionId(null)}
+          onSuccess={() => {
+            setExtendSessionId(null);
+            setActiveStation(null);
             refreshStations();
           }}
         />

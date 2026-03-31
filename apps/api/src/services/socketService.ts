@@ -11,15 +11,15 @@ export function emitStationUpdate(stationId: number, data: object) {
 }
 
 export function emitSessionTick(stationId: number, remainingSeconds: number) {
-  io?.to(`station:${stationId}`).emit('session:tick', { stationId, remainingSeconds });
+  io?.emit('session:tick', { stationId, remainingSeconds });
 }
 
 export function emitSessionWarning(stationId: number) {
-  io?.to(`station:${stationId}`).emit('session:warning', { stationId });
+  io?.emit('session:warning', { stationId });
 }
 
 export function emitSessionEnded(stationId: number, sessionId: number) {
-  io?.to(`station:${stationId}`).emit('session:ended', { stationId, sessionId });
+  io?.emit('session:ended', { stationId, sessionId });
 }
 
 export function emitGameEnded(stationId: number, gameId: number) {

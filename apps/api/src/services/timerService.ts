@@ -47,6 +47,7 @@ async function tick() {
         emitStationUpdate(session.stationId, { status: 'AVAILABLE', currentSessionId: null });
         emitSessionEnded(session.stationId, session.id);
       } else {
+        console.log('Sending timer update', session.stationId, remainingSeconds);
         emitSessionTick(session.stationId, remainingSeconds);
 
         if (remainingSeconds <= 120) {
