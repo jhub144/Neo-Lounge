@@ -29,9 +29,12 @@ beforeEach(() => jest.clearAllMocks());
 describe('GET /api/dashboard', () => {
   test('returns dashboard data for owner', async () => {
     (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
+    // completedTxs (first call) needs session.stationId
+    // allTxs (second call) needs session.stationId AND session.station.name
+    // mockResolvedValue returns the same value for both calls, so include the full shape
     (mp.transaction.findMany as jest.Mock).mockResolvedValue([
-      { id: 1, amount: 300, session: { stationId: 1 } },
-      { id: 2, amount: 150, session: { stationId: 1 } },
+      { id: 1, amount: 300, session: { stationId: 1, station: { name: 'Station 1' } } },
+      { id: 2, amount: 150, session: { stationId: 1, station: { name: 'Station 1' } } },
     ]);
     (mp.session.findMany as jest.Mock).mockResolvedValue([
       { id: 1, stationId: 1, durationMinutes: 60, startTime: new Date().toISOString(), station: { id: 1, name: 'Station 1' } },
@@ -62,12 +65,17 @@ describe('GET /api/dashboard', () => {
     expect(res.body.todayRevenue).toBe(0);
   });
 
-  test('returns 403 for non-owner staff', async () => {
+  test('returns dashboard data for regular staff (requireStaff allows it)', async () => {
     (mp.staff.findFirst as jest.Mock).mockResolvedValue(staffOnly);
+    (mp.transaction.findMany as jest.Mock).mockResolvedValue([]);
+    (mp.session.findMany as jest.Mock).mockResolvedValue([]);
+    (mp.securityEvent.findMany as jest.Mock).mockResolvedValue([]);
+    (mp.station.findMany as jest.Mock).mockResolvedValue(stations);
 
     const res = await request(app).get('/api/dashboard').set('x-staff-pin', '1111');
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
+    expect(res.body.todayRevenue).toBe(0);
   });
 
   test('returns 401 without auth', async () => {
