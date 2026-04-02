@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Neo Lounge — Stage Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+:root{--bg:#080b16;--surface:#111827;--surface2:#1a2035;--border:rgba(255,255,255,.06);--text:#e8edf5;--muted:#8b97b5;--dim:#5b6a8a;--blue:#4e8ff7;--blue-bg:#0f1f3d;--blue-border:#1e3a6e;--green:#34d278;--green-bg:#0b2218;--green-border:#165c35;--purple:#b18cff;--purple-bg:#170f30;--purple-border:#332366;--amber:#f5a623;--amber-bg:#1e1608;--amber-border:#4d3a12;--done-bg:#0a1210;--done-border:#14311e;--done-text:#2f7d4a;--code-bg:#0a0e1a;--code-text:#c4d0e8;--header-bg:rgba(8,11,22,.82);--shadow-sm:0 2px 8px rgba(0,0,0,.25);--shadow-md:0 8px 24px rgba(0,0,0,.3);--shadow-lift:0 4px 16px rgba(0,0,0,.2),0 1px 4px rgba(0,0,0,.15);--shine:inset 0 1px 0 rgba(255,255,255,.04);--r:14px;--r-sm:10px;--mono:'JetBrains Mono',monospace;--sans:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif}
+html.light{--bg:#f0f2f5;--surface:#ffffff;--surface2:#f0f2f5;--border:rgba(0,0,0,.08);--text:#151b2e;--muted:#5a6480;--dim:#8892a8;--blue:#3574e2;--blue-bg:#eaf1fd;--blue-border:#b8d0f5;--green:#1a9f52;--green-bg:#e8f7ee;--green-border:#a0dbb8;--purple:#7b4fdf;--purple-bg:#f0eafd;--purple-border:#c4aef5;--amber:#c88610;--amber-bg:#fdf5e6;--amber-border:#ecc87a;--done-bg:#eef8f2;--done-border:#bce0ca;--done-text:#5aaa72;--code-bg:#f5f7fa;--code-text:#1e2840;--header-bg:rgba(240,242,245,.82);--shadow-sm:0 2px 8px rgba(0,0,0,.05);--shadow-md:0 8px 24px rgba(0,0,0,.08);--shadow-lift:0 4px 16px rgba(0,0,0,.06),0 1px 4px rgba(0,0,0,.03);--shine:inset 0 1px 0 rgba(255,255,255,.7)}
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.7;-webkit-tap-highlight-color:transparent;transition:background .4s ease,color .4s ease;font-size:14px;letter-spacing:-.01em}
+
+.header{position:sticky;top:0;z-index:100;background:var(--header-bg);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);border-bottom:1px solid var(--border);padding:14px 16px;transition:background .4s ease}
+.header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--purple),var(--green));opacity:.7}
+.prog-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.prog-label{font-size:14px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.prog-label .stg{background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.prog-pct{font-size:12px;color:var(--muted);font-family:var(--mono);font-weight:500}
+.prog-track{width:100%;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:6px;box-shadow:inset 0 1px 2px rgba(0,0,0,.2)}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px rgba(78,143,247,.3)}
+.hdr-btns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.hdr-btn{font-family:var(--sans);font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .2s ease}
+.hdr-btn:active{transform:scale(.96)}
+.hdr-btn.jump{background:var(--blue-bg);border-color:rgba(78,143,247,.2);color:var(--blue)}
+.theme-toggle{font-family:var(--sans);font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .3s ease}
+.theme-toggle:active{transform:scale(.96)}
+
+.content{padding:12px 16px 100px 16px;max-width:920px;margin:0 auto}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:20px 0}
+
+/* SESSION SUMMARY */
+.session-summary{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;margin:14px 0;box-shadow:var(--shadow-lift),var(--shine);position:relative;overflow:hidden}
+.session-summary::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--purple),var(--blue))}
+html.light .session-summary{background:rgba(255,255,255,.6);box-shadow:var(--shadow-sm)}
+.sum-title{font-size:17px;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sum-body{font-size:14px;color:var(--text);line-height:1.7;margin-top:10px}.sum-body p{margin-bottom:8px}
+.sum-status{font-size:13px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-weight:500;cursor:pointer}.sum-status:active{color:var(--blue)}
+.sum-remember{margin-top:12px}.sum-remember p{font-weight:700;color:var(--amber);margin-bottom:6px;font-size:14px}
+.sum-remember li{font-size:14px;color:var(--text);padding:4px 0;padding-left:18px;position:relative;list-style:none;line-height:1.75}
+.sum-remember li::before{content:'•';position:absolute;left:0;color:var(--amber)}
+
+/* STAGE CARD */
+.stage{border:1px solid var(--border);border-radius:var(--r);margin:12px 0;overflow:hidden;transition:all .3s ease;box-shadow:var(--shadow-sm)}
+.stage.done{border-color:rgba(52,210,120,.08);box-shadow:none;opacity:.65}.stage.done:active{opacity:1}
+.stage.is-next{border-color:rgba(78,143,247,.2);box-shadow:0 0 0 1px rgba(78,143,247,.08),var(--shadow-sm)}
+.stage-head{display:flex;align-items:center;gap:12px;padding:18px 20px;background:var(--surface);cursor:pointer;-webkit-user-select:none;user-select:none;min-height:70px;transition:all .2s ease;position:relative}
+html.light .stage-head{background:rgba(255,255,255,.5)}
+.stage-head:active{background:var(--surface2)}
+.stage.done .stage-head{background:var(--done-bg)}.stage.done .stage-head *{color:var(--done-text)!important;-webkit-text-fill-color:var(--done-text)!important}
+.stage.is-next .stage-head{background:rgba(78,143,247,.04)}
+.stage.is-next .stage-head::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue);border-radius:3px 0 0 3px}
+.stage-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap;min-width:60px;opacity:.8}
+.stage-title{font-size:16px;font-weight:700;flex:1;letter-spacing:-.02em;background:linear-gradient(135deg,var(--text),var(--muted));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stage.open .stage-title{background:linear-gradient(135deg,var(--text),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stage-sub{font-size:12px;color:var(--muted);display:block;font-weight:500;margin-top:3px;-webkit-text-fill-color:var(--muted);background:none}
+.chk{width:24px;height:24px;min-width:24px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:0;cursor:pointer;transition:all .25s ease;flex-shrink:0}
+html.light .chk{border-color:rgba(0,0,0,.15)}.chk:active{transform:scale(.85)}
+.stage.done .chk{border-color:var(--green);background:var(--green)}
+.stage.done .chk::after{content:'';display:block;width:7px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg);margin-top:-2px}
+.stage-chevron{font-size:16px;color:var(--dim);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.stage.open .stage-chevron{transform:rotate(90deg);color:var(--blue)}
+.stage-body{display:none;padding:4px 18px 18px 18px}.stage.open .stage-body{display:block}
+
+/* SETUP CHECKLIST ITEMS */
+.setup-check{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;-webkit-user-select:none;user-select:none}
+.setup-check:last-child{border-bottom:none}
+.setup-check:active{opacity:.8}
+.setup-chk{width:22px;height:22px;min-width:22px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;transition:all .25s ease;flex-shrink:0;margin-top:2px}
+html.light .setup-chk{border-color:rgba(0,0,0,.15)}
+.setup-check.checked .setup-chk{border-color:var(--green);background:var(--green)}
+.setup-check.checked .setup-chk::after{content:'';display:block;width:6px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px}
+.setup-check.checked .setup-info h4{color:var(--done-text);text-decoration:line-through;text-decoration-color:rgba(47,125,74,.3)}
+.setup-info{flex:1}.setup-info h4{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;transition:all .3s ease}
+.setup-info p{font-size:13px;color:var(--muted);margin-bottom:4px}
+.setup-info .file-name{font-family:var(--mono);font-size:12px;color:var(--blue);background:var(--blue-bg);padding:2px 8px;border-radius:4px;display:inline-block}
+.setup-info .file-desc{font-size:12px;color:var(--dim);font-style:italic}
+.setup-prog{display:flex;align-items:center;gap:10px;margin:12px 0;padding:10px 0}
+.setup-prog-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.setup-prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:2px;transition:width .5s ease}
+.setup-prog-label{font-size:12px;font-family:var(--mono);color:var(--dim);white-space:nowrap}
+
+/* STAGE BODY */
+.what-builds{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 18px;margin:10px 0}
+.what-builds h4{font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.what-builds li{font-size:14px;color:var(--muted);padding:3px 0;padding-left:18px;position:relative;list-style:none}
+.what-builds li::before{content:'→';position:absolute;left:0;color:var(--blue)}
+.kickoff-box{background:var(--blue-bg);border:1px solid rgba(78,143,247,.2);border-left:3px solid rgba(78,143,247,.4);border-radius:var(--r-sm);padding:16px 20px;margin:12px 0}
+.kickoff-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--blue);margin-bottom:10px}
+.kickoff-code{background:var(--code-bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;padding-right:70px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--code-text);white-space:pre-wrap;word-break:break-word;position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;font-family:var(--sans);font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .2s ease}
+.copy-btn:active{background:var(--green-bg);color:var(--green);border-color:var(--green-border);transform:scale(.94)}
+.copy-btn.copied{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.done-when{background:var(--green-bg);border:1px solid rgba(52,210,120,.15);border-left:3px solid rgba(52,210,120,.3);border-radius:var(--r-sm);padding:14px 18px;margin:12px 0}
+.done-when h4{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--green);margin-bottom:8px}
+.done-when li{font-size:14px;color:var(--muted);padding:4px 0;padding-left:22px;position:relative;list-style:none}
+.done-when li::before{content:'☐';position:absolute;left:0;color:var(--green);font-size:13px}
+.mark-btn{display:block;width:100%;font-family:var(--sans);font-size:14px;font-weight:700;padding:12px;border-radius:var(--r-sm);border:1px solid rgba(52,210,120,.2);background:rgba(52,210,120,.06);color:var(--green);cursor:pointer;margin-top:14px;transition:all .2s ease;text-align:center}
+.mark-btn:active{background:var(--green);color:#fff;transform:scale(.98)}
+.mark-btn.is-done{background:rgba(52,210,120,.08);color:var(--done-text);border-color:rgba(52,210,120,.1)}
+
+/* FOCUS MODE */
+body.focus-mode .stage{display:none}
+body.focus-mode .stage.focus-visible{display:block}
+body.focus-mode .stage.focus-visible .stage-body{display:block}
+body.focus-mode .stage.focus-visible .stage-chevron{transform:rotate(90deg)}
+body.focus-mode .divider,body.focus-mode #titleArea{display:none}
+.focus-banner{display:none;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:var(--r);margin:0 0 12px 0;padding:12px 18px;font-size:13px;color:var(--amber);font-weight:600;text-align:center}
+body.focus-mode .focus-banner{display:block}
+
+/* QA TRAY */
+.qa-float{position:fixed;bottom:20px;right:16px;z-index:90;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));box-shadow:0 4px 16px rgba(78,143,247,.3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;transition:all .2s ease;-webkit-user-select:none;user-select:none}
+.qa-float:active{transform:scale(.9)}
+.qa-tray{display:none;position:fixed;bottom:76px;right:16px;z-index:90;width:320px;max-height:75vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-md)}
+html.light .qa-tray{background:rgba(255,255,255,.95)}
+.qa-tray.open{display:block}
+.qa-tray-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text)}
+.qa-tray-close{font-size:18px;cursor:pointer;color:var(--dim);padding:4px}.qa-tray-close:active{color:var(--text)}
+.qa-tray-body{padding:8px 12px 12px 12px}
+.qa-group{margin-bottom:14px}
+.qa-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:4px;padding:0 4px}
+.qa-group-info{font-size:12px;color:var(--muted);padding:2px 4px 6px 4px;line-height:1.5;font-style:italic}
+.qa-group-prompt{background:var(--purple-bg);border:1px solid rgba(177,140,255,.2);border-radius:var(--r-sm);padding:8px 12px;padding-right:60px;margin:4px 0 8px 0;font-family:var(--mono);font-size:11px;color:var(--purple);line-height:1.5;position:relative;cursor:pointer}
+.qa-group-prompt:active{opacity:.8}
+.qa-group-prompt .gp-copy{position:absolute;top:6px;right:6px;font-family:var(--sans);font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid rgba(177,140,255,.2);background:transparent;color:var(--purple);cursor:pointer;transition:all .2s ease}
+.qa-group-prompt .gp-copy:active{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.qa-group-prompt .gp-copy.copied{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.qa-group-prompt .gp-label{font-family:var(--sans);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(177,140,255,.6);display:block;margin-bottom:4px}
+.qa-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin:4px 0;cursor:pointer;transition:all .2s ease}
+.qa-item:active{transform:scale(.98);background:var(--blue-bg)}
+.qa-item-left{flex:1;min-width:0}
+.qa-item-name{font-size:13px;font-weight:600;color:var(--text)}
+.qa-item-cmd{font-size:11px;font-family:var(--mono);color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qa-item-where{font-size:10px;color:var(--dim);margin-top:2px}
+.qa-copy{font-family:var(--sans);font-size:11px;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;white-space:nowrap;transition:all .2s ease;flex-shrink:0;margin-left:8px}
+.qa-copy.copied{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+
+.welcome{display:none;background:var(--blue-bg);border:1px solid rgba(78,143,247,.15);border-radius:var(--r);margin:0 0 12px 0;padding:14px 18px;font-size:14px;color:var(--blue);font-weight:600;cursor:pointer;text-align:center}
+.welcome:active{opacity:.8}
+
+@media(max-width:400px){.stage-head{padding:14px 16px}.content{padding:8px 10px 80px 10px}.kickoff-code{font-size:11.5px;padding-right:60px}.qa-tray{width:calc(100vw - 32px)}}
+@media(max-width:500px) and (orientation:portrait){.content{max-width:100%;padding:8px 10px 80px 10px}.session-summary{padding:14px 16px}}
+@media print{.header,.qa-float,.qa-tray,.hdr-btns,.focus-banner,.welcome{display:none!important}.stage-body{display:block!important}.stage{opacity:1!important;break-inside:avoid}body{background:#fff;color:#111}.stage-head{background:#f5f5f5!important}.stage-head *{color:#111!important}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="prog-row">
+    <span class="prog-label" id="progLabel"></span>
+    <span class="prog-pct" id="progPct"></span>
+  </div>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+  <div class="hdr-btns">
+    <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">☀️</span> <span id="themeLabel">Light</span></button>
+    <button class="hdr-btn" onclick="toggleFocus()">🎯 Focus</button>
+    <button class="hdr-btn jump" onclick="jumpToCurrent()">▶ Next stage</button>
+    <button class="hdr-btn" onclick="exportProgress()">💾 Export</button>
+    <button class="hdr-btn" onclick="document.getElementById('importInput').click()">📂 Import</button>
+    <input type="file" id="importInput" accept=".json" onchange="importProgress(event)" style="display:none">
+    <button class="hdr-btn" style="color:#ef4444" onclick="resetProgress()">↺ Reset</button>
+  </div>
+</div>
+
+<div class="content">
+<div class="focus-banner">🎯 FOCUS MODE — Only showing your current stage. Tap "Focus" to see everything.</div>
+<div class="welcome" id="welcomeBanner" onclick="jumpToCurrent()"></div>
+
+<div id="titleArea" style="text-align:center;padding:24px 0 10px 0">
+  <div style="font-size:24px;font-weight:800;letter-spacing:-.03em;background:linear-gradient(135deg,var(--text),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">NEO LOUNGE</div>
+  <div style="font-size:13px;color:var(--muted);margin-top:4px">Stages 4–10 · Building on your working API + Kiosk</div>
+  <div style="font-size:11px;color:var(--dim);margin-top:4px;font-family:var(--mono)">7 stages · Paste one command per stage · Let Claude Code handle the rest</div>
+  <div style="font-size:10px;color:var(--dim);margin-top:6px;font-family:var(--mono);opacity:.6" id="lastSavedLine">Created: 2 April 2026</div>
+</div>
+
+<!-- SESSION SUMMARY -->
+<div class="session-summary"><div class="sum-title">📋 Where You Left Off</div><div class="sum-body" id="sumBody"></div><div class="sum-remember" id="sumRemember" style="display:none"><p>⚠️ Remember:</p><ul id="sumRememberList"></ul></div><div class="sum-status" id="sumStatus" onclick="jumpToCurrent()"></div></div>
+
+<div class="divider"></div>
+
+<!-- ═══ SETUP (STAGE 0) ═══ -->
+<div class="stage" id="stage0" data-stage="0">
+  <div class="stage-head" onclick="toggleStage(0)">
+    <span class="chk" onclick="event.stopPropagation();markDone(0)" id="chk0"></span>
+    <div style="flex:1"><span class="stage-num">SETUP</span><span class="stage-title">Project Setup<span class="stage-sub">Add the guide files to your Codespace so Claude Code can use them</span></span></div>
+    <span class="stage-chevron">▶</span>
+  </div>
+  <div class="stage-body">
+    <div class="setup-prog"><div class="setup-prog-track"><div class="setup-prog-fill" id="setupProgFill" style="width:0%"></div></div><span class="setup-prog-label" id="setupProgLabel">0 of 5</span></div>
+
+    <div class="setup-check" onclick="toggleSetup(0)"><div class="setup-chk" id="sc0"></div><div class="setup-info"><h4>Project Specification</h4><p>The master document describing your entire app. Claude Code reads this before doing any work.</p><span class="file-name">docs/SPEC.md</span><div class="file-desc">Already exists from Stage 1 — no action needed.</div></div></div>
+
+    <div class="setup-check" onclick="toggleSetup(1)"><div class="setup-chk" id="sc1"></div><div class="setup-info"><h4>Working Rules</h4><p>Universal coding standards — testing, commit habits, error handling. Claude Code follows these automatically.</p><span class="file-name">docs/WORKING-RULES.md</span><div class="file-desc">Upload to your docs/ folder. Drag and drop in VS Code.</div></div></div>
+
+    <div class="setup-check" onclick="toggleSetup(2)"><div class="setup-chk" id="sc2"></div><div class="setup-info"><h4>Prompt Plan</h4><p>Detailed step-by-step prompts for each stage. Claude Code reads this to know exactly what to build.</p><span class="file-name">docs/PROMPT-PLAN-STAGES-4-10.md</span><div class="file-desc">Upload to your docs/ folder.</div></div></div>
+
+    <div class="setup-check" onclick="toggleSetup(3)"><div class="setup-chk" id="sc3"></div><div class="setup-info"><h4>To-Do Checklist</h4><p>Granular checkbox list of every sub-task. Claude Code checks items off as it works.</p><span class="file-name">todo.md</span><div class="file-desc">Upload to your project root (top level, not inside docs/). Replace the old one if it exists.</div></div></div>
+
+    <div class="setup-check" onclick="toggleSetup(4)"><div class="setup-chk" id="sc4"></div><div class="setup-info"><h4>This Stage Guide</h4><p>The file you're reading now. Your visual companion on your tablet while Claude Code works.</p><span class="file-name">docs/stage-guide.html</span><div class="file-desc">Upload to your docs/ folder. Bookmark it on your tablet.</div></div></div>
+
+    <div class="kickoff-box" style="margin-top:16px"><div class="kickoff-label">📌 After uploading all files, commit them</div>
+      <div class="kickoff-code">git add . && git commit -m "Add stage guide, working rules, prompt plan, and todo" && git push origin main<button class="copy-btn" onclick="event.stopPropagation();copyCode(this)">Copy</button></div>
+    </div>
+    <button class="mark-btn" onclick="markDone(0)">Mark Setup Complete ✓</button>
+  </div>
+</div>
+
+<!-- ═══ STAGES 4–10 ═══ -->
+<div id="stageCards"></div>
+
+<div style="text-align:center;padding:30px 0;color:var(--dim);font-size:12px" id="closingText"></div>
+</div>
+
+<!-- QA TRAY -->
+<div class="qa-float" onclick="toggleQA()">⚡</div>
+<div class="qa-tray" id="qaTray">
+  <div class="qa-tray-hdr"><span>⚡ Quick Actions</span><span class="qa-tray-close" onclick="toggleQA()">✕</span></div>
+  <div class="qa-tray-body" id="qaTrayBody"></div>
+</div>
+
+<script>
+// ═══ DATA ═══
+var ALL_STAGES = [0,4,5,6,7,8,9,10]; // 0 = setup
+var BUILD_STAGES = [4,5,6,7,8,9,10];
+var TOTAL_ALL = ALL_STAGES.length; // 8 (setup + 7 build stages)
+var TOTAL_BUILD = BUILD_STAGES.length; // 7
+var STORAGE_KEY = 'neo-stage-guide-v2';
+var SETUP_KEY = 'neo-stage-setup-v2';
+var THEME_KEY = 'neo-stage-theme';
+var progress = {};
+var setupProgress = {};
+var SETUP_TOTAL = 5;
+
+var stageNames = {0:'Project Setup',4:'Tablet App',5:'Customer PWA',6:'Owner Dashboard',7:'M-Pesa Payments',8:'Hardware Control',9:'Video Pipeline',10:'Power + Final Test'};
+
+var stageData = {
+  4:{sub:'Per-station customer display with countdown timer, extend, and QR codes',prompts:'23-27',builds:['Next.js tablet app on port 3002, locked to one station','Idle state → Active countdown → 2-minute amber warning','Extend Session with duration picker and Cash/M-Pesa','End Game button + QR code display for replay downloads','PWA install, fullscreen kiosk mode, auto-reconnect'],done:['Tablet runs on port 3002 with idle screen','Booking from kiosk shows live countdown on tablet','2-minute warning turns amber','Extend adds time, End Game shows QR code','Fullscreen works on phone/tablet, 5-tap settings gesture']},
+  5:{sub:'Phone app for scanning QR codes and downloading replay clips',prompts:'28-29',builds:['Next.js PWA on port 3003 via QR code or auth code entry','6-character code entry screen','Replay list grouped by game with download buttons','Expiry countdown and auto-refresh','Service worker for instant loading'],done:['PWA runs on port 3003 with code entry','Valid auth code shows replay page','Invalid code shows error','Installable as PWA on phone']},
+  6:{sub:'Remote monitoring — revenue, sessions, security events, system health',prompts:'30-32',builds:['Next.js dashboard on port 3004 with owner PIN login','Revenue: total, per-station, session count, cash/M-Pesa split','Live station grid with WebSocket updates','Session history + security event log with filters','System health, service restart buttons, hardware panel'],done:['Dashboard runs on port 3004, owner-only login','Revenue correct after booking sessions','Sessions update in real time','History and security events show with filters','System health panel with restart buttons']},
+  7:{sub:'Africa\'s Talking — STK push, webhook, timeout handling',prompts:'33-35',builds:['Payment service with mock + real implementations','M-Pesa initiate + callback webhook (idempotent)','Station locking during pending payments','Kiosk UI: phone input, spinner, timeout, retry/cash','Internet check — disables M-Pesa when offline'],done:['Mock M-Pesa auto-confirms → session activates','Timeout test works → switch to cash','M-Pesa unavailable when offline','Webhook is idempotent, all tests pass']},
+  8:{sub:'Real ADB + Tuya services wired into session lifecycle',prompts:'36-38',builds:['Real ADB: HDMI switch, brightness, power, auto-reconnect','Real Tuya: sync mode, ambient, off, auto-reconnect','Session lifecycle triggers hardware automatically','Graceful degradation — failures don\'t block sessions'],done:['Mock logs show hardware calls on session events','Hardware status endpoint works','Sessions work even if hardware fails','All existing tests pass']},
+  9:{sub:'Python FastAPI — capture, AI clips, security recording, stitching',prompts:'39-44',builds:['FastAPI on port 8000 — video capture service','Station capture with 60-second rolling buffer','Mock YAMNet fires clip triggers during gameplay','Clip extraction + database registration + WebSocket notify','Security camera recording + event clip extraction','Highlight reel stitching + replay TTL cleanup'],done:['Pipeline health ok on port 8000','Session starts capture, ending stops it','Mock YAMNet fires → clip appears in PWA','Security cameras recording, event clips extracted','Highlight reel stitches, expired replays cleaned up']},
+  10:{sub:'Power failure handling, internet failover, end-to-end test',prompts:'45-47',builds:['Power-down saves session time, dims TVs','Power-restore resumes sessions, re-activates hardware','Internet failover: primary → 4G → offline','Full end-to-end integration test across all services','Code cleanup and final push'],done:['Power down/restore preserves sessions correctly','Kiosk + tablet show power banners','M-Pesa disables when offline','Full walk-in to replay flow works','All tests pass, code pushed to GitHub']}
+};
+
+var stageBriefings = {0:'Upload the project files to your Codespace before starting any build work.',4:'Stages 1–3 are complete. Next: build the tablet app for each gaming station.',5:'Tablet app done. Next: build the customer replay PWA.',6:'Customers can access replays. Next: owner dashboard for remote monitoring.',7:'Dashboard done. Next: add M-Pesa payments.',8:'Payments working. Next: real hardware control.',9:'Hardware wired in. Next: video pipeline for capture and AI detection.',10:'Video pipeline done. Final: power management and integration test.'};
+var stageRemember = {0:['Download all 4 files from Claude first','Open your Codespace on github.com'],4:['API port 3000, Kiosk port 3001','Owner PIN: 0000','Start PostgreSQL first'],5:['Tablet port 3002','Auth codes come from bookings'],6:['PWA port 3003','Dashboard owner-only'],7:['Mock payments auto-confirm in ~5s','MOCK_PAYMENT_SHOULD_FAIL=true tests timeouts'],8:['All hardware mocked in dev','USE_MOCK_ADB=false only with real TVs'],9:['Video pipeline is Python, port 8000','uvicorn main:app --port 8000'],10:['ALL services must run for final test','Push to GitHub when done']};
+
+// QA config
+var QA_GROUPS = [
+  {group:'🚀 Start Services',
+   info:'Start your servers before testing. Database first, then API, then frontends. Each needs its own terminal tab in VS Code.',
+   prompt:'Start all the services I need for my current stage. Start PostgreSQL, then the API, then any frontend apps that exist. Run each in its own terminal. Tell me when everything is running and what URLs to open.',
+   promptWhere:'Claude Code chat',
+   items:[
+    {name:'Start Database',cmd:'sudo service postgresql start',where:'Terminal',min:0,max:99},
+    {name:'Start API Server',cmd:'cd apps/api && npm run dev',where:'Terminal (new tab)',min:4,max:99},
+    {name:'Start Kiosk',cmd:'cd apps/kiosk && npm run dev',where:'Terminal (new tab)',min:4,max:99},
+    {name:'Start Tablet',cmd:'cd apps/tablet && npm run dev',where:'Terminal (new tab)',min:4,max:99},
+    {name:'Start PWA',cmd:'cd apps/pwa && npm run dev',where:'Terminal (new tab)',min:5,max:99},
+    {name:'Start Dashboard',cmd:'cd apps/dashboard && npm run dev',where:'Terminal (new tab)',min:6,max:99},
+    {name:'Start Video Pipeline',cmd:'cd services/video-pipeline && uvicorn main:app --port 8000',where:'Terminal (new tab)',min:9,max:99}
+  ]},
+  {group:'🌐 Open in Browser',
+   info:'Open these URLs to see your apps. Use Simple Browser in VS Code (Ctrl+Shift+P → "Simple Browser: Show") or a regular browser tab. The app must be running first.',
+   prompt:null,
+   items:[
+    {name:'Kiosk (staff app)',cmd:'http://localhost:3001',where:'Browser',min:4,max:99},
+    {name:'Tablet (station display)',cmd:'http://localhost:3002',where:'Browser',min:4,max:99},
+    {name:'Customer PWA',cmd:'http://localhost:3003',where:'Browser',min:5,max:99},
+    {name:'Owner Dashboard',cmd:'http://localhost:3004',where:'Browser',min:6,max:99},
+    {name:'API Health Check',cmd:'http://localhost:3000/api/health',where:'Browser',min:4,max:99},
+    {name:'Pipeline Health',cmd:'http://localhost:8000/pipeline/health',where:'Browser',min:9,max:99}
+  ]},
+  {group:'🧪 Test & Save',
+   info:'Run after Claude Code finishes a stage. Tests check nothing broke. Push backs up your code to GitHub so you don\'t lose anything.',
+   prompt:'Run the full test suite for the API. If any tests fail, fix them. Then commit all changes with a descriptive message and push to GitHub.',
+   promptWhere:'Claude Code chat',
+   items:[
+    {name:'Run API Tests',cmd:'cd apps/api && npm test',where:'Terminal',min:4,max:99},
+    {name:'Push to GitHub',cmd:'git push origin main',where:'Terminal',min:0,max:99},
+    {name:'Re-seed Database',cmd:'cd apps/api && npx prisma db seed',where:'Terminal',min:4,max:99}
+  ]}
+];
+
+// ═══ PROGRESS ═══
+function loadProgress(){try{var s=localStorage.getItem(STORAGE_KEY);if(s)progress=JSON.parse(s)}catch(e){}}
+function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(progress));localStorage.setItem(STORAGE_KEY+'-last-saved',new Date().toISOString());updateLastSaved()}catch(e){}}
+function loadSetup(){try{var s=localStorage.getItem(SETUP_KEY);if(s)setupProgress=JSON.parse(s)}catch(e){}}
+function saveSetup(){try{localStorage.setItem(SETUP_KEY,JSON.stringify(setupProgress));localStorage.setItem(STORAGE_KEY+'-last-saved',new Date().toISOString());updateLastSaved()}catch(e){}}
+function updateLastSaved(){var el=document.getElementById('lastSavedLine');if(!el)return;try{var ts=localStorage.getItem(STORAGE_KEY+'-last-saved');if(ts){var d=new Date(ts);el.textContent='Created: 2 Apr 2026 \u00B7 Last saved: '+d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})+' at '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}else{el.textContent='Created: 2 April 2026'}}catch(e){}}
+function getCompletedCount(){var c=0;ALL_STAGES.forEach(function(s){if(progress[s])c++});return c}
+function getFirstIncomplete(){for(var i=0;i<ALL_STAGES.length;i++){if(!progress[ALL_STAGES[i]])return ALL_STAGES[i]}return ALL_STAGES[ALL_STAGES.length-1]}
+function getSetupDone(){var c=0;for(var i=0;i<SETUP_TOTAL;i++){if(setupProgress[i])c++}return c}
+
+function toggleSetup(n){
+  setupProgress[n]=!setupProgress[n];saveSetup();updateSetupUI();
+  if(getSetupDone()>=SETUP_TOTAL&&!progress[0]){progress[0]=true;saveProgress()}
+  updateAll();
+}
+function updateSetupUI(){
+  var done=getSetupDone();
+  for(var i=0;i<SETUP_TOTAL;i++){
+    var el=document.getElementById('sc'+i);
+    var parent=el?el.parentElement:null;
+    if(parent){parent.classList.toggle('checked',!!setupProgress[i])}
+  }
+  var fill=document.getElementById('setupProgFill');
+  var label=document.getElementById('setupProgLabel');
+  if(fill)fill.style.width=Math.round((done/SETUP_TOTAL)*100)+'%';
+  if(label)label.textContent=done+' of '+SETUP_TOTAL;
+}
+
+// ═══ RENDER STAGE CARDS ═══
+function renderStageCards(){
+  var container=document.getElementById('stageCards');if(!container)return;
+  var html='';
+  BUILD_STAGES.forEach(function(s){
+    var d=stageData[s];if(!d)return;
+    html+='<div class="stage" id="stage'+s+'" data-stage="'+s+'">';
+    html+='<div class="stage-head" onclick="toggleStage('+s+')">';
+    html+='<span class="chk" onclick="event.stopPropagation();markDone('+s+')" id="chk'+s+'"></span>';
+    html+='<div style="flex:1"><span class="stage-num">STAGE '+s+'</span><span class="stage-title">'+stageNames[s]+'<span class="stage-sub">'+d.sub+'</span></span></div>';
+    html+='<span class="stage-chevron">▶</span></div>';
+    html+='<div class="stage-body">';
+    html+='<div class="what-builds"><h4>What this builds</h4><ul>';
+    d.builds.forEach(function(b){html+='<li>'+b+'</li>'});
+    html+='</ul></div>';
+    html+='<div class="kickoff-box"><div class="kickoff-label">📋 Paste into Claude Code to start</div>';
+    html+='<div class="kickoff-code">Read docs/WORKING-RULES.md, docs/SPEC.md, and docs/PROMPT-PLAN-STAGES-4-10.md.\n\nWork through Stage '+s+' (Prompts '+d.prompts+') from the prompt plan. Complete each prompt in order — build the code, run tests, fix any failures, and commit after each prompt. Update todo.md as you complete each checkbox.\n\nWhen you\'ve finished all of Stage '+s+', stop and tell me what you built, what tests pass, and if there were any issues.<button class="copy-btn" onclick="event.stopPropagation();copyCode(this)">Copy</button></div></div>';
+    html+='<div class="done-when"><h4>✅ Done when</h4><ul>';
+    d.done.forEach(function(item){html+='<li>'+item+'</li>'});
+    html+='</ul></div>';
+    html+='<button class="mark-btn" onclick="markDone('+s+')">Mark Stage '+s+' Complete ✓</button>';
+    html+='</div></div>';
+  });
+  container.innerHTML=html;
+}
+
+// ═══ UPDATE ALL ═══
+function updateAll(){
+  var done=getCompletedCount();
+  var current=getFirstIncomplete();
+  var pct=Math.round(((done+3)/(TOTAL_ALL+3))*100); // +3 for old stages 1-3
+  var pl=document.getElementById('progLabel');
+  var pp=document.getElementById('progPct');
+  var pf=document.getElementById('progFill');
+  if(done>=TOTAL_ALL){
+    if(pl)pl.innerHTML='<span class="stg">All Stages Complete! 🎉</span>';
+    if(pp)pp.textContent='100%';if(pf)pf.style.width='100%';
+  } else {
+    var label=current===0?'Setup':(stageNames[current]||'');
+    if(pl)pl.innerHTML=(current===0?'Setup':'Stage '+current)+' · <span class="stg">'+label+'</span>';
+    if(pp)pp.textContent=pct+'%';if(pf)pf.style.width=pct+'%';
+  }
+
+  ALL_STAGES.forEach(function(s){
+    var el=document.getElementById('stage'+s);if(!el)return;
+    var isDone=!!progress[s];
+    el.classList.toggle('done',isDone);
+    el.classList.toggle('is-next',s===current&&!isDone);
+    var btn=el.querySelector('.mark-btn');
+    if(btn){
+      var label=s===0?'Setup':'Stage '+s;
+      btn.textContent=isDone?'Completed ✓ (tap to undo)':'Mark '+label+' Complete ✓';
+      btn.classList.toggle('is-done',isDone);
+    }
+    if(isDone)el.classList.remove('open');
+  });
+  var currentEl=document.getElementById('stage'+current);
+  if(currentEl&&!currentEl.classList.contains('done'))currentEl.classList.add('open');
+
+  updateSummary(done,current);
+  updateSetupUI();
+  renderQA(current);
+
+  var ct=document.getElementById('closingText');
+  if(ct)ct.innerHTML=done>=TOTAL_ALL?'<em>All stages complete. You built this.</em>':'<em>Just this one stage.</em>';
+}
+
+function updateSummary(done,current){
+  var body=document.getElementById('sumBody');var status=document.getElementById('sumStatus');
+  var rem=document.getElementById('sumRemember');var remList=document.getElementById('sumRememberList');
+  if(!body)return;
+  var text=done>=TOTAL_ALL?'🎉 All software stages complete! Full system working with booking, timers, replays, payments, hardware, and power management.':(stageBriefings[current]||'');
+  body.innerHTML='<p>'+text+'</p>';
+  if(done>=TOTAL_ALL){if(status)status.textContent='🎉 All stages complete!';if(rem)rem.style.display='none';return}
+  if(status)status.textContent='Next: '+(current===0?'Setup':('Stage '+current+' — '+stageNames[current]))+' · Tap to jump →';
+  var items=stageRemember[current]||[];
+  if(items.length>0&&rem&&remList){rem.style.display='block';remList.innerHTML='';items.forEach(function(item){var li=document.createElement('li');li.textContent=item;remList.appendChild(li)})}
+  else if(rem){rem.style.display='none'}
+}
+
+// ═══ ACTIONS ═══
+function toggleStage(n){var el=document.getElementById('stage'+n);if(el)el.classList.toggle('open')}
+function markDone(n){
+  progress[n]=!progress[n];
+  if(n===0&&progress[0]){for(var i=0;i<SETUP_TOTAL;i++)setupProgress[i]=true;saveSetup()}
+  if(n===0&&!progress[0]){setupProgress={};saveSetup()}
+  saveProgress();updateAll();
+}
+function jumpToCurrent(){var c=getFirstIncomplete();var el=document.getElementById('stage'+c);if(el){el.classList.add('open');setTimeout(function(){var h=document.querySelector('.header');var hh=h?h.offsetHeight+16:90;var r=el.getBoundingClientRect();window.scrollTo({top:window.pageYOffset+r.top-hh,behavior:'smooth'})},100)}}
+function copyCode(btn){var box=btn.parentElement;var text=box.textContent.replace('Copy','').replace('Copied!','').trim();navigator.clipboard.writeText(text).then(function(){btn.textContent='Copied!';btn.classList.add('copied');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('copied')},2000)}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);btn.textContent='Copied!';btn.classList.add('copied');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('copied')},2000)})}
+function copyText(text,btnEl){navigator.clipboard.writeText(text).then(function(){btnEl.textContent='✓';btnEl.classList.add('copied');setTimeout(function(){btnEl.textContent='Copy';btnEl.classList.remove('copied')},1200)}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);btnEl.textContent='✓';btnEl.classList.add('copied');setTimeout(function(){btnEl.textContent='Copy';btnEl.classList.remove('copied')},1200)})}
+
+// ═══ THEME ═══
+function loadTheme(){try{if(localStorage.getItem(THEME_KEY)==='light')setTheme('light');else setTheme('dark')}catch(e){setTheme('dark')}}
+function setTheme(m){if(m==='light'){document.documentElement.classList.add('light');document.getElementById('themeIcon').textContent='🌙';document.getElementById('themeLabel').textContent='Dark'}else{document.documentElement.classList.remove('light');document.getElementById('themeIcon').textContent='☀️';document.getElementById('themeLabel').textContent='Light'}try{localStorage.setItem(THEME_KEY,m)}catch(e){}}
+function toggleTheme(){setTheme(document.documentElement.classList.contains('light')?'dark':'light')}
+
+// ═══ FOCUS ═══
+function toggleFocus(){document.body.classList.toggle('focus-mode');if(document.body.classList.contains('focus-mode')){document.querySelectorAll('.stage').forEach(function(s){s.classList.remove('focus-visible')});var c=getFirstIncomplete();var el=document.getElementById('stage'+c);if(el){el.classList.add('focus-visible');setTimeout(function(){var h=document.querySelector('.header');var hh=h?h.offsetHeight+16:90;var r=el.getBoundingClientRect();window.scrollTo({top:window.pageYOffset+r.top-hh,behavior:'smooth'})},100)}}else{document.querySelectorAll('.stage').forEach(function(s){s.classList.remove('focus-visible')})}}
+
+// ═══ QA TRAY ═══
+function toggleQA(){document.getElementById('qaTray').classList.toggle('open')}
+function renderQA(currentStage){
+  var body=document.getElementById('qaTrayBody');if(!body)return;
+  var html='';
+  QA_GROUPS.forEach(function(group){
+    var visible=group.items.filter(function(item){return currentStage>=item.min&&currentStage<=item.max});
+    if(visible.length===0&&!group.prompt)return;
+    html+='<div class="qa-group"><div class="qa-group-label">'+group.group+'</div>';
+    if(group.info)html+='<div class="qa-group-info">'+group.info+'</div>';
+    if(group.prompt){
+      var escaped=group.prompt.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+      html+='<div class="qa-group-prompt" onclick="copyText(\''+escaped+'\',this.querySelector(\'.gp-copy\'))">';
+      html+='<span class="gp-label">📋 Paste into '+group.promptWhere+'</span>';
+      html+=group.prompt;
+      html+='<button class="gp-copy" onclick="event.stopPropagation();copyText(\''+escaped+'\',this)">Copy</button>';
+      html+='</div>';
+    }
+    visible.forEach(function(item){
+      var esc=item.cmd.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      html+='<div class="qa-item" onclick="copyText(\''+esc+'\',this.querySelector(\'.qa-copy\'))">';
+      html+='<div class="qa-item-left"><div class="qa-item-name">'+item.name+'</div>';
+      html+='<div class="qa-item-cmd">'+item.cmd+'</div>';
+      html+='<div class="qa-item-where">→ '+item.where+'</div></div>';
+      html+='<button class="qa-copy" onclick="event.stopPropagation();copyText(\''+esc+'\',this)">Copy</button>';
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  body.innerHTML=html;
+}
+
+// ═══ EXPORT/IMPORT/RESET ═══
+function exportProgress(){var d=JSON.stringify({v:2,progress:progress,setup:setupProgress,theme:document.documentElement.classList.contains('light')?'light':'dark',exported:new Date().toISOString()},null,2);var b=new Blob([d],{type:'application/json'});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='neo-progress-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(u)}
+function importProgress(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){try{var d=JSON.parse(ev.target.result);if(d.progress){progress=d.progress;if(d.setup)setupProgress=d.setup;saveProgress();saveSetup();if(d.theme)setTheme(d.theme);updateAll();alert('Imported!')}}catch(err){alert('Could not read file.')}};r.readAsText(f);e.target.value=''}
+function resetProgress(){if(confirm('Reset ALL progress?')){progress={};setupProgress={};saveProgress();saveSetup();updateAll()}}
+
+// ═══ INIT ═══
+loadTheme();loadProgress();loadSetup();renderStageCards();updateAll();updateLastSaved();
+var d=getCompletedCount();if(d>0&&d<TOTAL_ALL){var c=getFirstIncomplete();var b=document.getElementById('welcomeBanner');if(b){b.textContent='Welcome back! Next: '+(c===0?'Setup':('Stage '+c+' — '+stageNames[c]))+' →';b.style.display='block';setTimeout(function(){b.style.display='none'},12000)}}
+document.addEventListener('click',function(e){var t=document.getElementById('qaTray');var f=document.querySelector('.qa-float');if(t&&t.classList.contains('open')&&!t.contains(e.target)&&!f.contains(e.target))t.classList.remove('open')});
+</script>
+</body>
+</html>
