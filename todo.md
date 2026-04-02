@@ -31,121 +31,122 @@
 ## Stage 4: Tablet App (Per-Station Customer Display)
 
 ### Prompt 23 — Tablet App Scaffold + Idle State
-- [ ] Initialise Next.js + TypeScript + Tailwind in `apps/tablet`
-- [ ] Configure dev server on port 3002
-- [ ] Create API client (`apps/tablet/src/lib/api.ts`) pointing to `http://localhost:3000`
-- [ ] Create WebSocket client (`apps/tablet/src/lib/socket.ts`) connecting to API server
-- [ ] Add `STATION_ID` environment variable (default: 1)
-- [ ] Create main page with Idle state: full-screen dark background, large station name centred, lounge branding, subtle animated pulse
-- [ ] Connect to WebSocket, listen for `station:updated` events for this station's ID
-- [ ] Log to console when station status changes to ACTIVE
-- [ ] **TEST:** Start API + tablet app → idle screen shows with station name
-- [ ] **TEST:** WebSocket connected (check browser console)
-- [ ] Git commit: `git add . && git commit -m "Tablet app scaffold with idle state"`
+- [x] Initialise Next.js + TypeScript + Tailwind in `apps/tablet`
+- [x] Configure dev server on port 3002
+- [x] Create API client (`apps/tablet/src/lib/api.ts`) pointing to `http://localhost:3000`
+- [x] Create WebSocket client (`apps/tablet/src/lib/socket.ts`) connecting to API server
+- [x] Add `STATION_ID` environment variable (default: 1)
+- [x] Create main page with Idle state: full-screen dark background, large station name centred, lounge branding, subtle animated pulse
+- [x] Connect to WebSocket, listen for `station:updated` events for this station's ID
+- [x] Log to console when station status changes to ACTIVE
+- [x] **TEST:** Start API + tablet app → idle screen shows with station name
+- [x] **TEST:** WebSocket connected (check browser console)
+- [x] Git commit: `git add . && git commit -m "Tablet app scaffold with idle state"`
 
 ### Prompt 24 — Tablet Active Session + Countdown Timer
-- [ ] Fetch current session from `GET /api/stations/{STATION_ID}` when status is ACTIVE
-- [ ] Display large countdown timer (MM:SS) centred on screen — readable from 2+ metres
-- [ ] Listen for `session:tick` WebSocket events to update countdown in real time
-- [ ] Show station name smaller at the top
-- [ ] Show muted "Session active" label below timer
-- [ ] Listen for `session:warning` — timer turns amber, background pulses, text changes to "Session ending soon"
-- [ ] Listen for `session:ended` — return to Idle state
-- [ ] State transitions working: Idle → Active → Warning → Idle
-- [ ] **TEST:** Book station from kiosk → tablet shows countdown timer
-- [ ] **TEST:** Wait for 2-minute warning → styling changes to amber
-- [ ] **TEST:** Session ends → tablet returns to idle
-- [ ] Git commit: `git add . && git commit -m "Tablet active session with live countdown"`
+- [x] Fetch current session from `GET /api/stations/{STATION_ID}` when status is ACTIVE
+- [x] Display large countdown timer (MM:SS) centred on screen — readable from 2+ metres
+- [x] Listen for `session:tick` WebSocket events to update countdown in real time
+- [x] Show station name smaller at the top
+- [x] Show muted "Session active" label below timer
+- [x] Listen for `session:warning` — timer turns amber, background pulses, text changes to "Session ending soon"
+- [x] Listen for `session:ended` — return to Idle state
+- [x] State transitions working: Idle → Active → Warning → Idle
+- [x] **TEST:** Book station from kiosk → tablet shows countdown timer
+- [x] **TEST:** Wait for 2-minute warning → styling changes to amber
+- [x] **TEST:** Session ends → tablet returns to idle
+- [x] Git commit: `git add . && git commit -m "Tablet active session with live countdown"`
 
 ### Prompt 25 — Tablet Extend Button + Payment Flow
-- [ ] Add "Extend Time" button always visible below countdown timer
-- [ ] Tapping opens duration picker overlay: +10m, +20m, +30m, +1hr with prices
-- [ ] Each button shows price calculated from current rate via `GET /api/settings`
-- [ ] Payment method toggle: Cash / M-Pesa
-- [ ] Cash flow: shows "Please pay [amount] KES at the counter", waits for staff confirmation
-- [ ] M-Pesa flow: phone number input → `POST /api/payments/mpesa/initiate` → waiting spinner
-- [ ] Listen for `payment:confirmed` → timer updates with extended time, close overlay
-- [ ] Listen for `payment:timeout` → show "Payment timed out" with Retry and Cancel buttons
-- [ ] After successful extension, overlay closes and countdown shows updated time
-- [ ] **TEST:** Book 5-min session → tap Extend on tablet → select +10m Cash → confirm on kiosk → timer updates
-- [ ] **TEST:** M-Pesa flow shows waiting screen → times out → verify timeout UI
-- [ ] Git commit: `git add . && git commit -m "Tablet extend session with payment flow"`
+- [x] Add "Extend Time" button always visible below countdown timer
+- [x] Tapping opens duration picker overlay: +10m, +20m, +30m, +1hr with prices
+- [x] Each button shows price calculated from current rate via `GET /api/settings`
+- [x] Payment method toggle: Cash / M-Pesa
+- [x] Cash flow: shows "Please pay [amount] KES at the counter", waits for staff confirmation
+- [x] M-Pesa flow: phone number input → `POST /api/payments/mpesa/initiate` → waiting spinner
+- [x] Listen for `payment:confirmed` → timer updates with extended time, close overlay
+- [x] Listen for `payment:timeout` → show "Payment timed out" with Retry and Cancel buttons
+- [x] After successful extension, overlay closes and countdown shows updated time
+- [x] **TEST:** Book 5-min session → tap Extend on tablet → select +10m Cash → confirm on kiosk → timer updates
+- [x] **TEST:** M-Pesa flow shows waiting screen → times out → verify timeout UI
+- [x] Git commit: `git add . && git commit -m "Tablet extend session with payment flow"`
 
 ### Prompt 26 — Tablet Game End Button + QR Code Display
-- [ ] Add smaller "End Game" button in corner of active state
-- [ ] Tapping calls `POST /api/games/{gameId}/end`
-- [ ] Handle gracefully if no active game exists
-- [ ] Show brief confirmation: "Game ended. Next game starts automatically"
-- [ ] Create Game End state: "Game Over" message + QR code area
-- [ ] Install QR code library (e.g., `qrcode.react`)
-- [ ] QR code encodes: `http://{API_IP}/replays?auth={authCode}&game={gameId}`
-- [ ] Show "Scan to download your replays" text
-- [ ] Auto-dismiss Game End state after 30 seconds, return to active countdown
-- [ ] Add "Skip" button to dismiss immediately
-- [ ] Listen for `game:ended` WebSocket events (from YAMNet, once built) — trigger Game End state
-- [ ] Listen for `replay:ready` WebSocket events — update QR code or show notification
-- [ ] Create Session End state: "Session Complete" + final QR code for all replays
-- [ ] Show "Replays available for 1 hour" text
-- [ ] Session End auto-returns to Idle after 60 seconds
-- [ ] **TEST:** Book session → tap "End Game" → QR code shows → auto-dismiss after 30s
-- [ ] **TEST:** End session from kiosk → tablet shows Session Complete → returns to idle
-- [ ] Git commit: `git add . && git commit -m "Tablet game end button and QR replay display"`
+- [x] Add smaller "End Game" button in corner of active state
+- [x] Tapping calls `POST /api/games/{gameId}/end`
+- [x] Handle gracefully if no active game exists
+- [x] Show brief confirmation: "Game ended. Next game starts automatically"
+- [x] Create Game End state: "Game Over" message + QR code area
+- [x] Install QR code library (`qrcode.react`)
+- [x] QR code encodes: `http://{API_IP}/replays?auth={authCode}&game={gameId}`
+- [x] Show "Scan to download your replays" text
+- [x] Auto-dismiss Game End state after 30 seconds, return to active countdown
+- [x] Add "Skip" button to dismiss immediately
+- [x] Listen for `game:ended` WebSocket events (from YAMNet, once built) — trigger Game End state
+- [x] Listen for `replay:ready` WebSocket events — update QR code or show notification
+- [x] Create Session End state: "Session Complete" + final QR code for all replays
+- [x] Show "Replays available for 1 hour" text
+- [x] Session End auto-returns to Idle after 60 seconds
+- [x] **TEST:** Book session → tap "End Game" → QR code shows → auto-dismiss after 30s
+- [x] **TEST:** End session from kiosk → tablet shows Session Complete → returns to idle
+- [x] Git commit: `git add . && git commit -m "Tablet game end button and QR replay display"`
 
 ### Prompt 27 — Tablet Polish + Fullscreen Kiosk Mode
-- [ ] Add service worker for offline shell caching
-- [ ] Add `manifest.json` for PWA install: fullscreen display mode, dark theme, lounge name
-- [ ] Hide all browser UI: no scroll bars, no text selection, no pull-to-refresh
-- [ ] Prevent pinch zoom and long-press context menu
-- [ ] Add WebSocket auto-reconnect with "Reconnecting..." indicator, retry every 3 seconds
-- [ ] Add hidden settings gesture: 5 rapid taps on station name reveals:
-  - [ ] Station ID selector
-  - [ ] API server URL input
-  - [ ] Reload button
-- [ ] Handle API unreachable on load: show "Connecting to server..." with retry
-- [ ] Handle invalid station: show error with settings gesture hint
-- [ ] Run existing API test suite — no regressions
-- [ ] **TEST:** Open tablet app in Chrome on phone/tablet → fills screen
-- [ ] **TEST:** Hidden settings only appear with 5-tap gesture
-- [ ] **TEST:** Disconnect API → reconnection indicator appears → restart API → tablet recovers
-- [ ] Git commit: `git add . && git commit -m "Tablet kiosk mode, PWA, auto-reconnect"`
+- [x] Add service worker for offline shell caching
+- [x] Add `manifest.json` for PWA install: fullscreen display mode, dark theme, lounge name
+- [x] Hide all browser UI: no scroll bars, no text selection, no pull-to-refresh
+- [x] Prevent pinch zoom and long-press context menu
+- [x] Add WebSocket auto-reconnect with "Reconnecting..." indicator, retry every 3 seconds
+- [x] Add hidden settings gesture: 5 rapid taps on station name reveals:
+  - [x] Station ID selector
+  - [x] API server URL input
+  - [x] Reload button
+- [x] Handle API unreachable on load: show "Connecting to server..." with retry
+- [x] Handle invalid station: show error with settings gesture hint
+- [x] Run existing API test suite — no regressions
+- [x] **TEST:** Open tablet app in Chrome on phone/tablet → fills screen
+- [x] **TEST:** Hidden settings only appear with 5-tap gesture
+- [x] **TEST:** Disconnect API → reconnection indicator appears → restart API → tablet recovers
+- [x] Git commit: `git add . && git commit -m "Tablet kiosk mode, PWA, auto-reconnect"`
+
 
 ---
 
 ## Stage 5: Customer Replay PWA
 
 ### Prompt 28 — PWA Scaffold + Auth Code Entry
-- [ ] Initialise Next.js + TypeScript + Tailwind in `apps/pwa`
-- [ ] Configure dev server on port 3003
-- [ ] Create API client pointing to Main API
-- [ ] Landing page: if URL contains `?auth={code}`, auto-fetch replays via `GET /api/replays/{authCode}`
-- [ ] If no auth code in URL, show 6-character code entry screen
-- [ ] Large input field styled like PIN entry (one box per character)
-- [ ] "View Replays" submit button
-- [ ] Invalid code shows "Code not found — check your receipt or ask staff"
-- [ ] Dark theme matching lounge aesthetic
-- [ ] Add service worker for PWA install + offline shell caching
-- [ ] Add `manifest.json`: fullscreen, dark theme, "Neo Lounge Replays" name
-- [ ] **TEST:** Open `http://localhost:3003` → code entry screen shows
-- [ ] **TEST:** Enter valid auth code from existing session → navigates to replay page
-- [ ] **TEST:** Enter invalid code → error message shows
+- [x] Initialise Next.js + TypeScript + Tailwind in `apps/pwa`
+- [x] Configure dev server on port 3003
+- [x] Create API client pointing to Main API
+- [x] Landing page: if URL contains `?auth={code}`, auto-fetch replays via `GET /api/replays/{authCode}`
+- [x] If no auth code in URL, show 6-character code entry screen
+- [x] Large input field styled like PIN entry (one box per character)
+- [x] "View Replays" submit button
+- [x] Invalid code shows "Code not found — check your receipt or ask staff"
+- [x] Dark theme matching lounge aesthetic
+- [x] Add service worker for PWA install + offline shell caching
+- [x] Add `manifest.json`: fullscreen, dark theme, "Neo Lounge Replays" name
+- [x] **TEST:** Open `http://localhost:3003` → code entry screen shows
+- [x] **TEST:** Enter valid auth code from existing session → navigates to replay page
+- [x] **TEST:** Enter invalid code → error message shows
 - [ ] Git commit: `git add . && git commit -m "Customer PWA scaffold with auth code entry"`
 
 ### Prompt 29 — PWA Replay List + Download
-- [ ] After successful auth code lookup, show session info header: station name, date, total duration
-- [ ] List games played in session, grouped by game
-- [ ] Under each game: list replay clips with timestamps
-- [ ] Each clip has "Download" button triggering direct MP4 download
-- [ ] If stitched highlight reel exists, show "Download Highlights" prominently at top of each game
-- [ ] If no clips exist: show "No replays yet — clips will appear here during gameplay"
-- [ ] Auto-refresh clip list every 10 seconds while session is active
-- [ ] Listen for `replay:ready` WebSocket events if connected
-- [ ] Expiry countdown: "Replays available for X more minutes"
-- [ ] If replays expired: "These replays are no longer available"
-- [ ] Single column mobile layout with large tap targets
-- [ ] Clips show placeholder thumbnail (real thumbnails later)
-- [ ] Handle empty states gracefully (no replay files exist yet)
-- [ ] **TEST:** Create session via kiosk → open PWA with auth code → page loads with session info
-- [ ] **TEST:** No replay files → shows "no replays yet" state
+- [x] After successful auth code lookup, show session info header: station name, date, total duration
+- [x] List games played in session, grouped by game
+- [x] Under each game: list replay clips with timestamps
+- [x] Each clip has "Download" button triggering direct MP4 download
+- [x] If stitched highlight reel exists, show "Download Highlights" prominently at top of each game
+- [x] If no clips exist: show "No replays yet — clips will appear here during gameplay"
+- [x] Auto-refresh clip list every 10 seconds while session is active
+- [x] Listen for `replay:ready` WebSocket events if connected
+- [x] Expiry countdown: "Replays available for X more minutes"
+- [x] If replays expired: "These replays are no longer available"
+- [x] Single column mobile layout with large tap targets
+- [x] Clips show placeholder thumbnail (real thumbnails later)
+- [x] Handle empty states gracefully (no replay files exist yet)
+- [x] **TEST:** Create session via kiosk → open PWA with auth code → page loads with session info
+- [x] **TEST:** No replay files → shows "no replays yet" state
 - [ ] Git commit: `git add . && git commit -m "PWA replay list with download buttons"`
 
 ---
@@ -604,8 +605,8 @@
 | Stage | Prompts | What Gets Built | Status |
 |-------|---------|----------------|--------|
 | 1–3 | 0–22 | API + Database + Kiosk | ✅ Complete |
-| 4 | 23–27 | Tablet app (timer, extend, QR codes, kiosk mode) | ⬜ |
-| 5 | 28–29 | Customer replay PWA (auth code, clip list, download) | ⬜ |
+| 4 | 23–27 | Tablet app (timer, extend, QR codes, kiosk mode) | ✅ Complete |
+| 5 | 28–29 | Customer replay PWA (auth code, clip list, download) | ✅ Complete |
 | 6 | 30–32 | Owner dashboard (revenue, history, security, system health) | ⬜ |
 | 7 | 33–35 | M-Pesa payments (service module, endpoints, kiosk UI) | ⬜ |
 | 8 | 36–38 | Hardware control (real ADB, real Tuya, session lifecycle) | ⬜ |
