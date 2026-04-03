@@ -374,29 +374,29 @@
 - [x] Git commit: `git add . && git commit -m "Video pipeline scaffold with health endpoint"`
 
 ### Prompt 40 — Station Capture Start/Stop + Buffer Management
-- [ ] `POST /capture/start/{station_id}`:
-  - [ ] Starts ffmpeg process for the station
-  - [ ] Mock mode: generates rolling test pattern video
-  - [ ] Real mode: reads from USB capture device
-  - [ ] Writes rolling 60-second buffer using ffmpeg segment muxer
-  - [ ] Track ffmpeg process: PID, start time, status
-- [ ] `POST /capture/stop/{station_id}`:
-  - [ ] Kills ffmpeg process
-  - [ ] Cleans up buffer files
-- [ ] `GET /capture/status`:
-  - [ ] Returns status of all 4 streams: running/stopped, uptime, buffer size
-- [ ] Buffer management:
-  - [ ] Each station's buffer in `CAPTURE_BUFFER_DIR/{station_id}/`
-  - [ ] Rolling 10-second segments that auto-overwrite
-  - [ ] Cleanup task removes orphaned buffers on startup
-- [ ] Wire into Main API:
-  - [ ] `POST /api/sessions` (create) calls `POST http://localhost:8000/capture/start/{stationId}`
-  - [ ] Session end calls `POST http://localhost:8000/capture/stop/{stationId}`
-  - [ ] Handle connection refused gracefully (pipeline might not be running)
-- [ ] **TEST:** Start API + video pipeline → create session → `capture/status` shows station capturing
-- [ ] **TEST:** End session → capture stops
-- [ ] **TEST:** Buffer files created in capture directory
-- [ ] Git commit: `git add . && git commit -m "Station capture with rolling buffer management"`
+- [x] `POST /capture/start/{station_id}`:
+  - [x] Starts ffmpeg process for the station
+  - [x] Mock mode: generates rolling test pattern video
+  - [x] Real mode: reads from USB capture device
+  - [x] Writes rolling 60-second buffer using ffmpeg segment muxer
+  - [x] Track ffmpeg process: PID, start time, status
+- [x] `POST /capture/stop/{station_id}`:
+  - [x] Kills ffmpeg process
+  - [x] Cleans up buffer files
+- [x] `GET /capture/status`:
+  - [x] Returns status of all 4 streams: running/stopped, uptime, buffer size
+- [x] Buffer management:
+  - [x] Each station's buffer in `CAPTURE_BUFFER_DIR/{station_id}/`
+  - [x] Rolling 10-second segments that auto-overwrite
+  - [x] Cleanup task removes orphaned buffers on startup
+- [x] Wire into Main API:
+  - [x] `POST /api/sessions` (create) calls `POST http://localhost:8000/capture/start/{stationId}`
+  - [x] Session end calls `POST http://localhost:8000/capture/stop/{stationId}`
+  - [x] Handle connection refused gracefully (pipeline might not be running)
+- [x] **TEST:** Start API + video pipeline → create session → `capture/status` shows station capturing
+- [x] **TEST:** End session → capture stops
+- [x] **TEST:** Buffer files created in capture directory
+- [x] Git commit: `git add . && git commit -m "Station capture with rolling buffer management"`
 
 ### Prompt 41 — Clip Extraction Endpoint
 - [ ] `POST /clips/extract`:
