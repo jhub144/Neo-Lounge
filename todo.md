@@ -444,33 +444,33 @@
 - [x] Git commit: `git add . && git commit -m "YAMNet detection interface with mock implementation"`
 
 ### Prompt 43 — Security Camera Continuous Recording
-- [ ] `POST /security/start-recording`:
-  - [ ] Starts ffmpeg processes for all 5 cameras
-  - [ ] Mock mode: generates test pattern video streams
-  - [ ] Real mode: connects to RTSP URLs from SecurityCamera database records
-  - [ ] Writes 15-minute rolling segments to `SECURITY_RECORDING_DIR/{camera_id}/`
-  - [ ] Auto-delete oldest segments when disk exceeds threshold
-- [ ] `POST /security/stop-recording`: stops all camera processes
-- [ ] `GET /security/recording-status`: status of all 5 streams (recording/stopped, uptime, segment count)
-- [ ] `GET /security/storage`: total disk, used, free, estimated days retention remaining
-- [ ] Camera health monitoring:
-  - [ ] Check each camera connection every 30 seconds
-  - [ ] If RTSP drops, mark offline via PATCH to Main API
-  - [ ] Auto-reconnect every 30 seconds
-  - [ ] Emit health status to Main API for dashboard
-- [ ] `POST /security/extract-clips`:
-  - [ ] Input: `{ event_id, timestamp, before_minutes, after_minutes }`
-  - [ ] For ALL 5 cameras: find segments covering time window
-  - [ ] Extract clips with `ffmpeg -c copy`
-  - [ ] Save to `SECURITY_CLIPS_DIR/{event_type}_{timestamp}_cam{id}.mp4`
-  - [ ] Register SecurityClip records in database via Main API
-- [ ] Wire into Main API:
-  - [ ] When SecurityEvent is created, call `POST http://localhost:8000/security/extract-clips`
-  - [ ] Handle gracefully if pipeline not running
-- [ ] **TEST:** Start video pipeline → `POST /security/start-recording` → status shows 5 cameras recording
-- [ ] **TEST:** Create SecurityEvent (e.g., start session) → security clips extracted
-- [ ] **TEST:** Dashboard shows camera status
-- [ ] Git commit: `git add . && git commit -m "Security camera recording with event clip extraction"`
+- [x] `POST /security/start-recording`:
+  - [x] Starts ffmpeg processes for all 5 cameras
+  - [x] Mock mode: generates test pattern video streams
+  - [x] Real mode: connects to RTSP URLs from SecurityCamera database records
+  - [x] Writes 15-minute rolling segments to `SECURITY_RECORDING_DIR/{camera_id}/`
+  - [x] Auto-delete oldest segments when disk exceeds threshold
+- [x] `POST /security/stop-recording`: stops all camera processes
+- [x] `GET /security/recording-status`: status of all 5 streams (recording/stopped, uptime, segment count)
+- [x] `GET /security/storage`: total disk, used, free, estimated days retention remaining
+- [x] Camera health monitoring:
+  - [x] Check each camera connection every 30 seconds
+  - [x] If RTSP drops, mark offline via PATCH to Main API
+  - [x] Auto-reconnect every 30 seconds
+  - [x] Emit health status to Main API for dashboard
+- [x] `POST /security/extract-clips`:
+  - [x] Input: `{ event_id, timestamp, before_minutes, after_minutes }`
+  - [x] For ALL 5 cameras: find segments covering time window
+  - [x] Extract clips with `ffmpeg -c copy`
+  - [x] Save to `SECURITY_CLIPS_DIR/{event_type}_{timestamp}_cam{id}.mp4`
+  - [x] Register SecurityClip records in database via Main API
+- [x] Wire into Main API:
+  - [x] When SecurityEvent is created, call `POST http://localhost:8000/security/extract-clips`
+  - [x] Handle gracefully if pipeline not running
+- [x] **TEST:** Start video pipeline → `POST /security/start-recording` → status shows 5 cameras recording
+- [x] **TEST:** Create SecurityEvent (e.g., start session) → security clips extracted
+- [x] **TEST:** Dashboard shows camera status
+- [x] Git commit: `git add . && git commit -m "Security camera recording with event clip extraction"`
 
 ### Prompt 44 — Replay Cleanup + Stitching
 - [ ] Replay TTL cleanup background task:
