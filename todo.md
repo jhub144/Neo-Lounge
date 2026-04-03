@@ -154,65 +154,65 @@
 ## Stage 6: Owner Dashboard
 
 ### Prompt 30 — Dashboard Scaffold + Revenue Overview
-- [ ] Initialise Next.js + TypeScript + Tailwind in `apps/dashboard`
-- [ ] Configure dev server on port 3004
-- [ ] Create API client pointing to Main API
-- [ ] PIN login screen — only accepts OWNER role
-- [ ] Revenue section: today's total revenue (large, prominent number)
-- [ ] Revenue per station (4 smaller cards)
-- [ ] Number of sessions today
-- [ ] Average session duration
-- [ ] Cash vs M-Pesa split percentage
-- [ ] All data from `GET /api/dashboard`
-- [ ] Active sessions section: live station grid showing current status of all 4 stations
-- [ ] For active stations: timer countdown, customer since time, amount paid
-- [ ] Connect via WebSocket for real-time updates
-- [ ] Responsive: works on phone (single column) and desktop (grid)
-- [ ] Auto-refresh dashboard data every 60 seconds
-- [ ] **TEST:** Log in with owner PIN (0000) → dashboard shows
-- [ ] **TEST:** Book session via kiosk → dashboard shows active session and revenue
-- [ ] **TEST:** End session → dashboard updates
-- [ ] Git commit: `git add . && git commit -m "Owner dashboard with revenue and active sessions"`
+- [x] Initialise Next.js + TypeScript + Tailwind in `apps/dashboard`
+- [x] Configure dev server on port 3004
+- [x] Create API client pointing to Main API
+- [x] PIN login screen — only accepts OWNER role
+- [x] Revenue section: today's total revenue (large, prominent number)
+- [x] Revenue per station (4 smaller cards)
+- [x] Number of sessions today
+- [x] Average session duration
+- [x] Cash vs M-Pesa split percentage
+- [x] All data from `GET /api/dashboard`
+- [x] Active sessions section: live station grid showing current status of all 4 stations
+- [x] For active stations: timer countdown, customer since time, amount paid
+- [x] Connect via WebSocket for real-time updates
+- [x] Responsive: works on phone (single column) and desktop (grid)
+- [x] Auto-refresh dashboard data every 60 seconds
+- [x] **TEST:** Log in with owner PIN (0000) → dashboard shows
+- [x] **TEST:** Book session via kiosk → dashboard shows active session and revenue
+- [x] **TEST:** End session → dashboard updates
+- [x] Git commit: `git add . && git commit -m "Owner dashboard with revenue and active sessions"`
 
 ### Prompt 31 — Dashboard Session History + Security Events
-- [ ] Session history section: scrolling list of today's completed sessions
-- [ ] Each row: station, start time, end time, duration, total paid, payment method, staff member
-- [ ] Tap row to expand and see all transactions for that session
-- [ ] Filter by station and payment method
-- [ ] Pagination or "load more" for busy days
-- [ ] Security events section: chronological list from `GET /api/events`
-- [ ] Each event: type badge (colour-coded), timestamp, description, staff member, station
-- [ ] Filter by event type (dropdown)
-- [ ] Tap event to see metadata
-- [ ] Placeholder for "View camera clips" link
-- [ ] Add tab navigation: Overview, History, Security
-- [ ] **TEST:** Create sessions, extend one, transfer one, end them → History tab shows accurate records
-- [ ] **TEST:** Security tab shows all SecurityEvents logged
-- [ ] Git commit: `git add . && git commit -m "Dashboard session history and security events"`
+- [x] Session history section: scrolling list of today's completed sessions
+- [x] Each row: station, start time, end time, duration, total paid, payment method, staff member
+- [x] Tap row to expand and see all transactions for that session
+- [x] Filter by station and payment method
+- [x] Pagination or "load more" for busy days
+- [x] Security events section: chronological list from `GET /api/events`
+- [x] Each event: type badge (colour-coded), timestamp, description, staff member, station
+- [x] Filter by event type (dropdown)
+- [x] Tap event to see metadata
+- [x] Placeholder for "View camera clips" link
+- [x] Add tab navigation: Overview, History, Security
+- [x] **TEST:** Create sessions, extend one, transfer one, end them → History tab shows accurate records
+- [x] **TEST:** Security tab shows all SecurityEvents logged
+- [x] Git commit: `git add . && git commit -m "Dashboard session history and security events"`
 
 ### Prompt 32 — Dashboard System Health + Service Controls
-- [ ] System Health section:
-  - [ ] API server status (green/red from `GET /api/health`)
-  - [ ] Database status (from health check response)
-  - [ ] Video Pipeline status (`GET /pipeline/health` — handle connection refused gracefully)
-  - [ ] Camera status for all 5 cameras from `GET /api/security/cameras`
-  - [ ] External HDD storage from video pipeline — used/total with percentage bar
-  - [ ] Estimated days of retention remaining
-- [ ] Service control buttons (owner only):
-  - [ ] Restart API, Restart Video Pipeline, Restart PostgreSQL
-  - [ ] Each calls `POST /api/system/restart-service`
-  - [ ] Confirm dialog before restart
-  - [ ] "Restarting..." spinner, re-check health after 10 seconds
-- [ ] Hardware status panel:
-  - [ ] Per-station TV connection status
-  - [ ] Per-station LED controller status
-  - [ ] Reads from mock hardware services for now
-- [ ] Add `GET /api/hardware/status` endpoint to API (queries mock ADB + Tuya for all 4 stations)
-- [ ] Add System tab to dashboard navigation
-- [ ] **TEST:** System tab → all services green (or "not running" for video pipeline)
-- [ ] **TEST:** Restart button → confirm dialog → spinner
-- [ ] **TEST:** Hardware panel → 4 stations with mock-connected status
-- [ ] Git commit: `git add . && git commit -m "Dashboard system health, hardware status, service controls"`
+- [x] System Health section:
+  - [x] API server status (green/red from `GET /api/health`)
+  - [x] Database status (from health check response)
+  - [x] Video Pipeline status (`GET /pipeline/health` — handle connection refused gracefully)
+  - [x] Camera status for all 5 cameras from `GET /api/security/cameras`
+  - [x] External HDD storage from video pipeline — used/total with percentage bar
+  - [x] Estimated days of retention remaining
+- [x] Service control buttons (owner only):
+  - [x] Restart API, Restart Video Pipeline, Restart PostgreSQL
+  - [x] Each calls `POST /api/system/restart-service`
+  - [x] Confirm dialog before restart
+  - [x] "Restarting..." spinner, re-check health after 10 seconds
+- [x] Hardware status panel:
+  - [x] Per-station TV connection status
+  - [x] Per-station LED controller status
+  - [x] Reads from mock hardware services for now
+- [x] Add `GET /api/hardware/status` endpoint to API (queries mock ADB + Tuya for all 4 stations)
+- [x] Add System tab to dashboard navigation
+- [x] **TEST:** System tab → all services green (or "not running" for video pipeline)
+- [x] **TEST:** Restart button → confirm dialog → spinner
+- [x] **TEST:** Hardware panel → 4 stations with mock-connected status
+- [x] Git commit: `git add . && git commit -m "Dashboard system health, hardware status, service controls"`
 
 ---
 
@@ -607,7 +607,7 @@
 | 1–3 | 0–22 | API + Database + Kiosk | ✅ Complete |
 | 4 | 23–27 | Tablet app (timer, extend, QR codes, kiosk mode) | ✅ Complete |
 | 5 | 28–29 | Customer replay PWA (auth code, clip list, download) | ✅ Complete |
-| 6 | 30–32 | Owner dashboard (revenue, history, security, system health) | ⬜ |
+| 6 | 30–32 | Owner dashboard (revenue, history, security, system health) | ✅ Complete |
 | 7 | 33–35 | M-Pesa payments (service module, endpoints, kiosk UI) | ⬜ |
 | 8 | 36–38 | Hardware control (real ADB, real Tuya, session lifecycle) | ⬜ |
 | 9 | 39–44 | Video pipeline (capture, clips, YAMNet, security cameras, stitching) | ⬜ |
