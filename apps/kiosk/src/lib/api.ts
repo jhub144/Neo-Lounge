@@ -140,3 +140,18 @@ export function addToQueue(
 export function getQueue(stationId: number, pin?: string): Promise<QueueEntry[]> {
   return apiFetch<QueueEntry[]>(`/api/queue/${stationId}`, pin);
 }
+
+export function checkMpesaAvailability(): Promise<{ mpesaAvailable: boolean }> {
+  return apiFetch<{ mpesaAvailable: boolean }>('/api/payments/status');
+}
+
+export function initiateMpesaPayment(
+  pin: string,
+  body: { sessionId: number; phoneNumber: string; amount: number }
+): Promise<{ transactionId: number; checkoutRequestId: string }> {
+  return apiFetch<{ transactionId: number; checkoutRequestId: string }>(
+    '/api/payments/mpesa/initiate',
+    pin,
+    { method: 'POST', body: JSON.stringify(body) }
+  );
+}

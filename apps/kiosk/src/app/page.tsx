@@ -23,7 +23,7 @@ export default function Home() {
     getStations(pin).then(setStations).catch(console.error);
   }, [pin]);
 
-  const { ticks, warnings } = useSocket({
+  const { socket, ticks, warnings } = useSocket({
     onStationUpdated: refreshStations,
     onQueueUpdated: refreshStations,
     onSessionEnded: refreshStations,
@@ -77,6 +77,7 @@ export default function Home() {
         <BookingModal
           station={selectedStation}
           settings={settings}
+          socket={socket}
           onClose={() => setSelectedStation(null)}
           onSuccess={() => {
             setSelectedStation(null);
@@ -104,6 +105,7 @@ export default function Home() {
           station={activeStation}
           settings={settings}
           extensionSessionId={extendSessionId}
+          socket={socket}
           onClose={() => setExtendSessionId(null)}
           onSuccess={() => {
             setExtendSessionId(null);

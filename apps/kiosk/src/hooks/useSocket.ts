@@ -13,6 +13,8 @@ export function useSocket(callbacks?: {
   onStationUpdated?: (stationId: number) => void;
   onQueueUpdated?: () => void;
   onSessionEnded?: (stationId: number) => void;
+  onPaymentConfirmed?: (sessionId: number) => void;
+  onPaymentTimeout?: (sessionId: number) => void;
 }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [ticks, setTicks] = useState<Record<number, number>>({});
@@ -64,6 +66,14 @@ export function useSocket(callbacks?: {
         return next;
       });
       callbacksRef.current?.onSessionEnded?.(data.stationId);
+    });
+
+    s.on('payment:confirmed', (data: { sessionId: number }) => {
+      callbacksRef.current?.onPaymentConfirmed?.(data.sessionId);
+    });
+
+    s.on('payment:timeout', (data: { sessionId: number }) => {
+      callbacksRef.current?.onPaymentTimeout?.(data.sessionId);
     });
 
     return () => {
