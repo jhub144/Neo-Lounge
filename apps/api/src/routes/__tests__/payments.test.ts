@@ -169,9 +169,9 @@ describe('POST /api/payments/mpesa/initiate', () => {
     expect(res.body.code).toBe('SESSION_NOT_FOUND');
   });
 
-  test('returns 400 when session is not PENDING', async () => {
+  test('returns 400 when session is COMPLETED or PAUSED', async () => {
     (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
-    (mp.session.findUnique as jest.Mock).mockResolvedValue({ ...pendingSession, status: 'ACTIVE' });
+    (mp.session.findUnique as jest.Mock).mockResolvedValue({ ...pendingSession, status: 'COMPLETED' });
 
     const res = await request(app)
       .post('/api/payments/mpesa/initiate')
@@ -180,6 +180,22 @@ describe('POST /api/payments/mpesa/initiate', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_SESSION_STATUS');
+  });
+
+  test('accepts ACTIVE session for extension M-Pesa payment', async () => {
+    (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
+    (mp.session.findUnique as jest.Mock).mockResolvedValue({ ...pendingSession, status: 'ACTIVE' });
+    (mp.transaction.create as jest.Mock).mockResolvedValue({ id: 10 });
+    (mp.transaction.update as jest.Mock).mockResolvedValue({});
+    mps.initiateStkPush.mockResolvedValue({ success: true, checkoutRequestId: 'CHK999' });
+
+    const res = await request(app)
+      .post('/api/payments/mpesa/initiate')
+      .set('x-staff-pin', '0000')
+      .send({ phoneNumber: '0712345678', amount: 150, sessionId: 1 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ transactionId: 10, checkoutRequestId: 'CHK999', status: 'pending' });
   });
 
   test('returns 502 when STK push fails', async () => {

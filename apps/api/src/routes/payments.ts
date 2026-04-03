@@ -64,10 +64,11 @@ router.post('/mpesa/initiate', requireStaff, async (req: Request, res: Response)
       return;
     }
 
-    // Only allow initiate on PENDING sessions (station locked for M-Pesa)
-    if ((session.status as string) !== 'PENDING') {
+    // Allow PENDING (new session awaiting initial payment) or ACTIVE (extension payment).
+    const validStatuses = ['PENDING', 'ACTIVE'];
+    if (!validStatuses.includes(session.status as string)) {
       res.status(400).json({
-        error: `Session is ${session.status}. Can only initiate M-Pesa for PENDING sessions.`,
+        error: `Session is ${session.status}. M-Pesa can only be initiated for PENDING or ACTIVE sessions.`,
         code: 'INVALID_SESSION_STATUS',
       });
       return;

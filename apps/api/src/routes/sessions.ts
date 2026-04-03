@@ -45,6 +45,8 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
     const sessionStatus = isMpesa ? 'PENDING' : 'ACTIVE';
     const txStatus      = isMpesa ? 'PENDING'  : 'COMPLETED';
 
+    // For M-Pesa: no transaction yet — it's created by POST /api/payments/mpesa/initiate
+    // after the customer's phone number is collected.
     const session = await prisma.session.create({
       data: {
         stationId,
@@ -52,14 +54,16 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
         durationMinutes,
         authCode,
         status: sessionStatus as any,
-        transactions: {
-          create: {
-            amount,
-            method: paymentMethod as any,
-            status: txStatus as any,
-            staffPin,
+        ...(isMpesa ? {} : {
+          transactions: {
+            create: {
+              amount,
+              method: paymentMethod as any,
+              status: 'COMPLETED',
+              staffPin,
+            },
           },
-        },
+        }),
         games: {
           create: { startTime: new Date() },
         },
@@ -273,17 +277,20 @@ router.patch('/:id/extend', requireStaff, async (req: Request, res: Response) =>
     const rate = settings?.baseHourlyRate ?? 300;
     const amount = calculatePrice(durationMinutes, rate);
     const staffPin = req.staff!.pin;
-    const txStatus = paymentMethod === 'CASH' ? 'COMPLETED' : 'PENDING';
 
-    await prisma.transaction.create({
-      data: {
-        sessionId: id,
-        amount,
-        method: paymentMethod as any,
-        status: txStatus as any,
-        staffPin,
-      },
-    });
+    // Cash: create COMPLETED transaction immediately.
+    // M-Pesa: transaction is created by POST /api/payments/mpesa/initiate after phone collection.
+    if (paymentMethod !== 'MPESA') {
+      await prisma.transaction.create({
+        data: {
+          sessionId: id,
+          amount,
+          method: paymentMethod as any,
+          status: 'COMPLETED',
+          staffPin,
+        },
+      });
+    }
 
     const updated = await prisma.session.update({
       where: { id },

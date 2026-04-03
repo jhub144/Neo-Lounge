@@ -67,15 +67,14 @@ describe('POST /api/sessions', () => {
     );
   });
 
-  test('M-Pesa transaction created as PENDING', async () => {
+  test('M-Pesa session created as PENDING with no pre-built transaction', async () => {
     (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
     (mp.station.findUnique as jest.Mock).mockResolvedValue(availableStation);
     (mp.settings.findUnique as jest.Mock).mockResolvedValue(settings);
     (mp.session.create as jest.Mock).mockResolvedValue(
-      makeSession({ transactions: [{ id: 1, amount: 300, method: 'MPESA', status: 'PENDING' }] })
+      makeSession({ status: 'PENDING', transactions: [] })
     );
-    (mp.station.update as jest.Mock).mockResolvedValue(activeStation);
-    (mp.securityEvent.createMany as jest.Mock).mockResolvedValue({ count: 2 });
+    (mp.station.update as jest.Mock).mockResolvedValue({ ...activeStation, status: 'PENDING' });
 
     const res = await request(app)
       .post('/api/sessions')
@@ -83,15 +82,18 @@ describe('POST /api/sessions', () => {
       .send({ stationId: 1, durationMinutes: 60, paymentMethod: 'MPESA' });
 
     expect(res.status).toBe(201);
+    // Session created in PENDING state — no transaction nested (initiateMpesaPayment handles that)
     expect(mp.session.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          transactions: expect.objectContaining({
-            create: expect.objectContaining({ method: 'MPESA', status: 'PENDING' }),
-          }),
-        }),
+        data: expect.not.objectContaining({ transactions: expect.anything() }),
       })
     );
+    // Station locked to PENDING during M-Pesa wait
+    expect(mp.station.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: 'PENDING' }) })
+    );
+    // No hardware activation until payment confirmed
+    expect(mp.securityEvent.createMany).not.toHaveBeenCalled();
   });
 
   test('returns 400 if station is not AVAILABLE', async () => {
