@@ -38,8 +38,12 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
     const amount = calculatePrice(durationMinutes, rate);
     const authCode = generateAuthCode();
     const staffPin = req.staff!.pin;
+    const isMpesa = paymentMethod === 'MPESA';
 
-    const txStatus = paymentMethod === 'CASH' ? 'COMPLETED' : 'PENDING';
+    // For M-Pesa: session starts PENDING until the webhook confirms payment.
+    // For Cash: session activates immediately.
+    const sessionStatus = isMpesa ? 'PENDING' : 'ACTIVE';
+    const txStatus      = isMpesa ? 'PENDING'  : 'COMPLETED';
 
     const session = await prisma.session.create({
       data: {
@@ -47,7 +51,7 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
         staffPin,
         durationMinutes,
         authCode,
-        status: 'ACTIVE',
+        status: sessionStatus as any,
         transactions: {
           create: {
             amount,
@@ -57,43 +61,50 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
           },
         },
         games: {
-          create: {
-            startTime: new Date(),
-          },
+          create: { startTime: new Date() },
         },
       },
       include: { transactions: true, games: true },
     });
 
-    await prisma.station.update({
-      where: { id: stationId },
-      data: { status: 'ACTIVE', currentSessionId: session.id },
-    });
+    if (isMpesa) {
+      // Lock the station during M-Pesa wait — prevents concurrent bookings.
+      // Hardware activates only after the callback confirms payment.
+      await prisma.station.update({
+        where: { id: stationId },
+        data: { status: 'PENDING', currentSessionId: session.id },
+      });
+      emitStationUpdate(stationId, { status: 'PENDING', currentSessionId: session.id });
+    } else {
+      // Cash: activate immediately.
+      await prisma.station.update({
+        where: { id: stationId },
+        data: { status: 'ACTIVE', currentSessionId: session.id },
+      });
+      emitStationUpdate(stationId, { status: 'ACTIVE', currentSessionId: session.id });
 
-    emitStationUpdate(stationId, { status: 'ACTIVE', currentSessionId: session.id });
+      // Hardware activation (fire-and-forget for cash)
+      adbService.switchToHDMI(station.adbAddress).catch(() => {});
+      tuyaService.activateSync(station.tuyaDeviceId).catch(() => {});
+      captureService.startCapture(stationId, station.captureDevice).catch(() => {});
 
-    // Hardware activation (fire-and-forget)
-    adbService.switchToHDMI(station.adbAddress).catch(() => {});
-    tuyaService.activateSync(station.tuyaDeviceId).catch(() => {});
-    captureService.startCapture(stationId, station.captureDevice).catch(() => {});
-
-    const eventType = paymentMethod === 'CASH' ? 'CASH_PAYMENT' : 'MPESA_PAYMENT';
-    await prisma.securityEvent.createMany({
-      data: [
-        {
-          type: 'SESSION_START',
-          description: `Session ${session.id} started on ${station.name}`,
-          staffPin,
-          stationId,
-        },
-        {
-          type: eventType as any,
-          description: `${paymentMethod} payment of ${amount} KES for session ${session.id}`,
-          staffPin,
-          stationId,
-        },
-      ],
-    });
+      await prisma.securityEvent.createMany({
+        data: [
+          {
+            type: 'SESSION_START',
+            description: `Session ${session.id} started on ${station.name}`,
+            staffPin,
+            stationId,
+          },
+          {
+            type: 'CASH_PAYMENT',
+            description: `Cash payment of ${amount} KES for session ${session.id}`,
+            staffPin,
+            stationId,
+          },
+        ],
+      });
+    }
 
     res.status(201).json(session);
   } catch (err) {
