@@ -8,6 +8,8 @@ from fastapi import FastAPI
 
 import config
 from capture.mock_capture import MockCaptureService
+from capture.cleanup import cleanup_task
+from capture.stitcher import stitch_queue
 from detection.pipeline import init_pipeline
 
 # ── Service singletons ────────────────────────────────────────────────────────
@@ -42,8 +44,13 @@ async def lifespan(_app: FastAPI):  # type: ignore[type-arg]
     capture_service.cleanup_orphaned_buffers()
     await _load_settings_from_api()
     init_pipeline()
+    stitch_queue.start()
+    cleanup_task.start()
+    await stitch_queue.recover()
     yield
-    # Graceful shutdown — stop any running captures
+    # Graceful shutdown
+    stitch_queue.stop()
+    cleanup_task.stop()
     for status in capture_service.get_status():
         if status["running"]:
             await capture_service.stop(status["station_id"])

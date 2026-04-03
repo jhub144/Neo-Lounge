@@ -473,28 +473,28 @@
 - [x] Git commit: `git add . && git commit -m "Security camera recording with event clip extraction"`
 
 ### Prompt 44 — Replay Cleanup + Stitching
-- [ ] Replay TTL cleanup background task:
-  - [ ] Runs every 5 minutes
-  - [ ] Finds sessions where endTime + replayTTLMinutes has passed
-  - [ ] Deletes replay files from disk
-  - [ ] Updates/deletes ReplayClip records in database
-  - [ ] Logs cleanup actions
-- [ ] Highlight reel stitching:
-  - [ ] When game ends, queue a stitching job
-  - [ ] Concatenate all clips for that game into single highlight reel using ffmpeg
-  - [ ] LOW PRIORITY background task — one at a time to avoid CPU contention
-  - [ ] Save stitched file to same replay directory
-  - [ ] Update database with `stitchedReelPath`
-  - [ ] Notify tablet + PWA via WebSocket that reel is ready
-- [ ] Stitching queue:
-  - [ ] Simple in-memory queue
-  - [ ] Process one job at a time
-  - [ ] On pipeline restart, re-check for games with clips but no stitched reel
-- [ ] **TEST:** Start session → mock YAMNet generates clips → end game → stitching job runs
-- [ ] **TEST:** Combined highlight file produced
-- [ ] **TEST:** PWA shows "Download Highlights" option
-- [ ] **TEST:** Set short TTL (2 min) → wait → verify clips cleaned up
-- [ ] Git commit: `git add . && git commit -m "Replay cleanup and highlight reel stitching"`
+- [x] Replay TTL cleanup background task:
+  - [x] Runs every 5 minutes
+  - [x] Finds sessions where endTime + replayTTLMinutes has passed
+  - [x] Deletes replay files from disk
+  - [x] Updates/deletes ReplayClip records in database
+  - [x] Logs cleanup actions
+- [x] Highlight reel stitching:
+  - [x] When game ends, queue a stitching job
+  - [x] Concatenate all clips for that game into single highlight reel using ffmpeg
+  - [x] LOW PRIORITY background task — one at a time to avoid CPU contention
+  - [x] Save stitched file to same replay directory
+  - [x] Update database with `stitchedReelPath`
+  - [x] Notify tablet + PWA via WebSocket that reel is ready
+- [x] Stitching queue:
+  - [x] Simple in-memory queue
+  - [x] Process one job at a time
+  - [x] On pipeline restart, re-check for games with clips but no stitched reel
+- [x] **TEST:** Start session → mock YAMNet generates clips → end game → stitching job runs
+- [x] **TEST:** Combined highlight file produced
+- [x] **TEST:** PWA shows "Download Highlights" option
+- [x] **TEST:** Set short TTL (2 min) → wait → verify clips cleaned up
+- [x] Git commit: `git add . && git commit -m "Replay cleanup and highlight reel stitching"`
 
 ---
 
