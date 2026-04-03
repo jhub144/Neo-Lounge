@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { getSessions, type SessionHistoryEntry } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
@@ -108,9 +108,8 @@ export default function HistoryTab() {
                 const methods = [...new Set(s.transactions.map(t => t.method))];
                 const isExpanded = expanded === s.id;
                 return (
-                  <>
+                  <React.Fragment key={s.id}>
                     <tr
-                      key={s.id}
                       onClick={() => setExpanded(isExpanded ? null : s.id)}
                       className="border-b border-white/5 hover:bg-white/4 cursor-pointer transition-colors"
                     >
@@ -130,7 +129,7 @@ export default function HistoryTab() {
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr key={`${s.id}-exp`} className="bg-white/2 border-b border-white/5">
+                      <tr className="bg-white/2 border-b border-white/5">
                         <td colSpan={8} className="px-4 py-3">
                           <p className="text-xs font-semibold uppercase text-white/40 mb-2">Transactions</p>
                           <div className="space-y-1">
@@ -147,7 +146,7 @@ export default function HistoryTab() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })}
             </tbody>
