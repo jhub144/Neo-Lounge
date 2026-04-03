@@ -1,13 +1,13 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma';
-import { requireOwner } from '../middleware/auth';
+import { requireStaff } from '../middleware/auth';
 import { adbService } from '../services/adbService';
 import { tuyaService } from '../services/tuyaService';
 
 const router = Router();
 
 // GET /api/hardware/status
-router.get('/status', requireOwner, async (_req: Request, res: Response) => {
+router.get('/status', requireStaff, async (_req: Request, res: Response) => {
   try {
     const stations = await prisma.station.findMany({ orderBy: { id: 'asc' } });
 

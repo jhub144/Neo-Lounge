@@ -190,8 +190,9 @@ router.post('/mpesa/callback', async (req: Request, res: Response) => {
       ]);
 
       // Hardware activation (fire-and-forget)
-      adbService.switchToHDMI(station.adbAddress).catch(() => {});
-      tuyaService.activateSync(station.tuyaDeviceId).catch(() => {});
+      adbService.switchToHdmi(station.adbAddress).catch(() => {});
+      adbService.setBrightness(station.adbAddress, 100).catch(() => {});
+      tuyaService.setSyncMode(station.tuyaDeviceId).catch(() => {});
       captureService.startCapture(station.id, station.captureDevice).catch(() => {});
 
       // Log audit events

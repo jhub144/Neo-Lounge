@@ -260,7 +260,10 @@ describe('POST /api/sessions/:id/transfer', () => {
 
   test('transfers session to available station', async () => {
     (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
-    (mp.session.findUnique as jest.Mock).mockResolvedValue(makeSession());
+    (mp.session.findUnique as jest.Mock).mockResolvedValue({
+      ...makeSession(),
+      station: { id: 1, name: 'Station 1', adbAddress: '', tuyaDeviceId: '', captureDevice: '' },
+    });
     (mp.station.findUnique as jest.Mock).mockResolvedValue(targetStation);
     (mp.game.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
     (mp.session.update as jest.Mock).mockResolvedValue(makeSession({ status: 'COMPLETED' }));

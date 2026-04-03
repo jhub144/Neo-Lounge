@@ -40,14 +40,15 @@ describe('GET /api/hardware/status', () => {
     });
   });
 
-  test('rejects non-owner staff', async () => {
+  test('allows non-owner staff', async () => {
     (mp.staff.findFirst as jest.Mock).mockResolvedValue(staffOnly);
+    (mp.station.findMany as jest.Mock).mockResolvedValue([]);
 
     const res = await request(app)
       .get('/api/hardware/status')
       .set('x-staff-pin', '1111');
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
   });
 
   test('requires authentication', async () => {

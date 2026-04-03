@@ -87,8 +87,9 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
       emitStationUpdate(stationId, { status: 'ACTIVE', currentSessionId: session.id });
 
       // Hardware activation (fire-and-forget for cash)
-      adbService.switchToHDMI(station.adbAddress).catch(() => {});
-      tuyaService.activateSync(station.tuyaDeviceId).catch(() => {});
+      adbService.switchToHdmi(station.adbAddress).catch(() => {});
+      adbService.setBrightness(station.adbAddress, 100).catch(() => {});
+      tuyaService.setSyncMode(station.tuyaDeviceId).catch(() => {});
       captureService.startCapture(stationId, station.captureDevice).catch(() => {});
 
       await prisma.securityEvent.createMany({
@@ -223,7 +224,7 @@ router.patch('/:id/end', requireStaff, async (req: Request, res: Response) => {
 
     // Hardware deactivation (fire-and-forget)
     const src = await prisma.station.findUnique({ where: { id: session.stationId } });
-    adbService.switchToScreensaver(src?.adbAddress ?? '').catch(() => {});
+    adbService.switchToAndroidTv(src?.adbAddress ?? '').catch(() => {});
     tuyaService.setAmbientMode(src?.tuyaDeviceId ?? '').catch(() => {});
     captureService.stopCapture(session.stationId).catch(() => {});
 
@@ -382,7 +383,7 @@ router.post('/:id/transfer', requireStaff, async (req: Request, res: Response) =
     const [session, targetStation] = await Promise.all([
       prisma.session.findUnique({
         where: { id },
-        include: { games: { where: { endTime: null } } },
+        include: { games: { where: { endTime: null } }, station: true },
       }),
       prisma.station.findUnique({ where: { id: targetStationId } }),
     ]);
@@ -457,6 +458,14 @@ router.post('/:id/transfer', requireStaff, async (req: Request, res: Response) =
         metadata: { fromSessionId: id, toSessionId: newSession.id, remainingMinutes },
       },
     });
+
+    // Hardware: deactivate old station, activate new station (fire-and-forget)
+    const srcStation = session.station;
+    adbService.switchToAndroidTv(srcStation.adbAddress).catch(() => {});
+    tuyaService.setAmbientMode(srcStation.tuyaDeviceId).catch(() => {});
+    adbService.switchToHdmi(targetStation!.adbAddress).catch(() => {});
+    adbService.setBrightness(targetStation!.adbAddress, 100).catch(() => {});
+    tuyaService.setSyncMode(targetStation!.tuyaDeviceId).catch(() => {});
 
     res.status(201).json(newSession);
   } catch (err) {

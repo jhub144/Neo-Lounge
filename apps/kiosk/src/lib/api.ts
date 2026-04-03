@@ -141,6 +141,16 @@ export function getQueue(stationId: number, pin?: string): Promise<QueueEntry[]>
   return apiFetch<QueueEntry[]>(`/api/queue/${stationId}`, pin);
 }
 
+export interface HardwareStationStatus {
+  stationId: number;
+  tvConnected: boolean;
+  ledsConnected: boolean;
+}
+
+export function getHardwareStatus(pin: string): Promise<{ stations: HardwareStationStatus[] }> {
+  return apiFetch<{ stations: HardwareStationStatus[] }>('/api/hardware/status', pin);
+}
+
 export function checkMpesaAvailability(): Promise<{ mpesaAvailable: boolean }> {
   return apiFetch<{ mpesaAvailable: boolean }>('/api/payments/status');
 }

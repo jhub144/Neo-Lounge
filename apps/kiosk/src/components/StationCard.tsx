@@ -13,16 +13,18 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function StationCard({ 
-  station, 
-  onClick, 
-  remainingSeconds, 
-  isWarning 
-}: { 
-  station: Station; 
+export default function StationCard({
+  station,
+  onClick,
+  remainingSeconds,
+  isWarning,
+  hardwareWarnings,
+}: {
+  station: Station;
   onClick?: () => void;
   remainingSeconds?: number;
   isWarning?: boolean;
+  hardwareWarnings?: string[];
 }) {
   const { label, badge } = STATUS_STYLES[station.status] ?? STATUS_STYLES.FAULT;
   const clickable = station.status === 'AVAILABLE' || station.status === 'ACTIVE';
@@ -54,6 +56,18 @@ export default function StationCard({
           ? (remainingSeconds !== undefined ? `Time Remaining: ${formatTime(remainingSeconds)}` : `Session #${station.currentSession.id}`)
           : 'No active session'}
       </p>
+      {hardwareWarnings && hardwareWarnings.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {hardwareWarnings.map((w) => (
+            <span
+              key={w}
+              className="text-[11px] font-semibold px-2 py-0.5 rounded border border-red-500/30 bg-red-500/10 text-red-400 uppercase tracking-wide"
+            >
+              {w}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

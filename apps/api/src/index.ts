@@ -18,6 +18,9 @@ import securityRouter from './routes/security';
 import paymentsRouter from './routes/payments';
 import { initSocketService } from './services/socketService';
 import { startTimerService } from './services/timerService';
+import { adbService } from './services/adbService';
+import { tuyaService } from './services/tuyaService';
+import prisma from './lib/prisma';
 
 
 dotenv.config();
@@ -62,6 +65,14 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`API server running on port ${PORT}`);
   });
   startTimerService();
+
+  // Initialise hardware services with all station addresses from the database
+  prisma.station.findMany().then((stations) => {
+    adbService.initAddresses(stations.map((s) => s.adbAddress).filter(Boolean));
+    tuyaService.initDevices(stations.map((s) => s.tuyaDeviceId).filter(Boolean));
+  }).catch((err) => {
+    console.error('[startup] Failed to init hardware services:', err);
+  });
 }
 
 export default app;

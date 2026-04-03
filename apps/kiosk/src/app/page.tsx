@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import PinLogin from '@/components/PinLogin';
 import StationCard from '@/components/StationCard';
 import BookingModal from '@/components/BookingModal';
-import { getStations, getSettings, type Station, type Settings } from '@/lib/api';
+import { getStations, getSettings, getHardwareStatus, type Station, type Settings, type HardwareStationStatus } from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import ActiveSessionPanel from '@/components/ActiveSessionPanel';
 import ShiftLog from '@/components/ShiftLog';
@@ -17,6 +17,7 @@ export default function Home() {
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [activeStation, setActiveStation] = useState<Station | null>(null);
   const [extendSessionId, setExtendSessionId] = useState<number | null>(null);
+  const [hardwareStatus, setHardwareStatus] = useState<Map<number, HardwareStationStatus>>(new Map());
 
   const refreshStations = useCallback(() => {
     if (!pin) return;
@@ -29,11 +30,23 @@ export default function Home() {
     onSessionEnded: refreshStations,
   });
 
+  const refreshHardwareStatus = useCallback(() => {
+    if (!pin) return;
+    getHardwareStatus(pin)
+      .then(({ stations: hw }) => {
+        setHardwareStatus(new Map(hw.map((s) => [s.stationId, s])));
+      })
+      .catch(() => {}); // silently ignore — hardware status is best-effort
+  }, [pin]);
+
   useEffect(() => {
     if (!isLoggedIn) return;
     refreshStations();
     getSettings(pin).then(setSettings).catch(console.error);
-  }, [isLoggedIn, pin, refreshStations]);
+    refreshHardwareStatus();
+    const interval = setInterval(refreshHardwareStatus, 30_000);
+    return () => clearInterval(interval);
+  }, [isLoggedIn, pin, refreshStations, refreshHardwareStatus]);
 
   if (!isLoggedIn) return <PinLogin />;
 
@@ -54,18 +67,25 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <main className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 content-start">
-          {stations.map((station) => (
-            <StationCard
-              key={station.id}
-              station={station}
-              onClick={() => {
-                if (station.status === 'ACTIVE') setActiveStation(station);
-                else setSelectedStation(station);
-              }}
-              remainingSeconds={ticks[station.id]}
-              isWarning={warnings[station.id]}
-            />
-          ))}
+          {stations.map((station) => {
+            const hw = hardwareStatus.get(station.id);
+            const hwWarnings: string[] = [];
+            if (hw && !hw.tvConnected) hwWarnings.push('TV not responding');
+            if (hw && !hw.ledsConnected) hwWarnings.push('LEDs offline');
+            return (
+              <StationCard
+                key={station.id}
+                station={station}
+                onClick={() => {
+                  if (station.status === 'ACTIVE') setActiveStation(station);
+                  else setSelectedStation(station);
+                }}
+                remainingSeconds={ticks[station.id]}
+                isWarning={warnings[station.id]}
+                hardwareWarnings={hwWarnings}
+              />
+            );
+          })}
         </main>
         
         <aside className="lg:col-span-1 h-[calc(100vh-160px)] sticky top-8">
