@@ -6,7 +6,7 @@ jest.mock('../../lib/prisma', () => ({
   __esModule: true,
   default: {
     station: { findUnique: jest.fn(), update: jest.fn() },
-    session: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+    session: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn() },
     settings: { findUnique: jest.fn() },
     securityEvent: { create: jest.fn(), createMany: jest.fn() },
     game: { updateMany: jest.fn() },
@@ -302,6 +302,44 @@ describe('POST /api/sessions/:id/transfer', () => {
     const res = await request(app)
       .post('/api/sessions/1/transfer')
       .send({ targetStationId: 2 });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('GET /api/sessions (list)', () => {
+  test('returns sessions list for authenticated staff', async () => {
+    (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
+    (mp.session.findMany as jest.Mock).mockResolvedValue([
+      { ...makeSession(), station: availableStation, transactions: [] },
+    ]);
+
+    const res = await request(app)
+      .get('/api/sessions')
+      .set('x-staff-pin', '0000');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject({ id: 1, status: 'ACTIVE' });
+  });
+
+  test('filters by status query param', async () => {
+    (mp.staff.findFirst as jest.Mock).mockResolvedValue(ownerStaff);
+    (mp.session.findMany as jest.Mock).mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/sessions?status=COMPLETED')
+      .set('x-staff-pin', '0000');
+
+    expect(res.status).toBe(200);
+    expect(mp.session.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: 'COMPLETED' }),
+      })
+    );
+  });
+
+  test('returns 401 without staff pin', async () => {
+    const res = await request(app).get('/api/sessions');
     expect(res.status).toBe(401);
   });
 });

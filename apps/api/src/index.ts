@@ -10,8 +10,14 @@ import queueRouter from './routes/queue';
 import settingsRouter from './routes/settings';
 import eventsRouter from './routes/events';
 import dashboardRouter from './routes/dashboard';
+import gamesRouter from './routes/games';
+import replaysRouter from './routes/replays';
+import hardwareRouter from './routes/hardware';
+import systemRouter from './routes/system';
+import securityRouter from './routes/security';
 import { initSocketService } from './services/socketService';
 import { startTimerService } from './services/timerService';
+
 
 dotenv.config();
 
@@ -43,6 +49,11 @@ app.use('/api/queue', queueRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/games', gamesRouter);
+app.use('/api/replays', replaysRouter);
+app.use('/api/hardware', hardwareRouter);
+app.use('/api/system', systemRouter);
+app.use('/api/security', securityRouter);
 
 if (process.env.NODE_ENV !== 'test') {
   httpServer.listen(PORT, () => {

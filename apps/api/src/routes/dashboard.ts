@@ -10,7 +10,7 @@ router.get('/', requireStaff, async (_req: Request, res: Response) => {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
-    const [completedTxs, allTxs, activeSessions, recentEvents, stations] = await Promise.all([
+    const [completedTxs, allTxs, activeSessions, recentEvents, stations, sessionsToday] = await Promise.all([
       prisma.transaction.findMany({
         where: { status: 'COMPLETED', createdAt: { gte: startOfDay } },
         include: { session: { select: { stationId: true } } },
@@ -30,6 +30,10 @@ router.get('/', requireStaff, async (_req: Request, res: Response) => {
         take: 20,
       }),
       prisma.station.findMany({ orderBy: { id: 'asc' } }),
+      prisma.session.findMany({
+        where: { startTime: { gte: startOfDay } },
+        select: { id: true, durationMinutes: true },
+      }),
     ]);
 
     const todayRevenue = completedTxs.reduce((sum, tx) => sum + tx.amount, 0);
@@ -56,9 +60,15 @@ router.get('/', requireStaff, async (_req: Request, res: Response) => {
       stationName: t.session.station.name,
     }));
 
+    const avgDurationMinutes = sessionsToday.length > 0
+      ? Math.round(sessionsToday.reduce((s, sess) => s + sess.durationMinutes, 0) / sessionsToday.length)
+      : 0;
+
     res.json({
       todayRevenue,
       todayRevenueByStation,
+      sessionsCount: sessionsToday.length,
+      avgDurationMinutes,
       recentTransactions,
       activeSessions: activeSessions.map((s) => ({
         id: s.id,

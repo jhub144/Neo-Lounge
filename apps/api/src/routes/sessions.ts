@@ -102,6 +102,34 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/sessions — list sessions (owner dashboard history)
+router.get('/', requireStaff, async (req: Request, res: Response) => {
+  try {
+    const { status, stationId } = req.query as { status?: string; stationId?: string };
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 500);
+
+    const sessions = await prisma.session.findMany({
+      where: {
+        ...(status ? { status: status as any } : {}),
+        ...(stationId ? { stationId: parseInt(stationId) } : {}),
+      },
+      include: {
+        station: { select: { id: true, name: true } },
+        transactions: {
+          select: { id: true, amount: true, method: true, status: true, createdAt: true, staffPin: true },
+        },
+      },
+      orderBy: { startTime: 'desc' },
+      take: limit,
+    });
+
+    res.json(sessions);
+  } catch (err) {
+    console.error('[sessions] GET / error:', err);
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
 // GET /api/sessions/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
