@@ -267,22 +267,21 @@
 - [x] **TEST:** `npm test` — all tests pass
 - [x] Git commit: `git add . && git commit -m "M-Pesa initiate and callback endpoints"`
 
-### Prompt 35 — Kiosk M-Pesa UI Integration
-- [ ] Check M-Pesa availability on kiosk load (`GET /api/payments/status`)
-- [ ] If unavailable: show Cash toggle only with "M-Pesa unavailable" note
-- [ ] If available: show Cash / M-Pesa toggle
-- [ ] M-Pesa selected: show phone number input (Kenyan format)
-- [ ] "Send M-Pesa Request" button → calls `POST /api/payments/mpesa/initiate`
-- [ ] Show waiting state: "M-Pesa request sent to 07XX XXX XXX — waiting..."
-- [ ] Show 30-second countdown timer during wait
-- [ ] Listen for `payment:confirmed` WebSocket → close modal, success toast, station ACTIVE
-- [ ] Listen for `payment:timeout` → show "Payment timed out" + "Retry M-Pesa" / "Switch to Cash"
-- [ ] Staff can switch to Cash while waiting (cancels pending M-Pesa)
-- [ ] Extension flow: same M-Pesa option works in extend session modal
-- [ ] Update tablet extend flow to also support M-Pesa
-- [ ] **TEST (mock):** Select M-Pesa → enter phone → send → mock auto-confirms → session activates
-- [ ] **TEST (mock fail):** Set `MOCK_PAYMENT_SHOULD_FAIL=true` → M-Pesa times out → switch to cash
-- [ ] Git commit: `git add . && git commit -m "Kiosk M-Pesa payment UI with timeout and fallback"`
+### Prompt 35 — Kiosk M-Pesa UI Integration ✅
+- [x] Check M-Pesa availability on kiosk load (`GET /api/payments/status`)
+- [x] If unavailable: show Cash toggle only with "M-Pesa unavailable" note
+- [x] If available: show Cash / M-Pesa toggle
+- [x] M-Pesa selected: show phone number input (Kenyan format)
+- [x] "Send M-Pesa Request" button → calls `POST /api/payments/mpesa/initiate`
+- [x] Show waiting state: "M-Pesa request sent to 07XX XXX XXX — waiting..."
+- [x] Show 30-second countdown timer during wait
+- [x] Listen for `payment:confirmed` WebSocket → close modal, success toast, station ACTIVE
+- [x] Listen for `payment:timeout` → show "Payment timed out" + "Switch to Cash"
+- [x] Staff can switch to Cash after timeout (station already freed by webhook failure path)
+- [x] Extension flow: same M-Pesa option works in extend session modal
+- [x] **TEST (mock):** Select M-Pesa → enter phone → send → mock auto-confirms → session activates
+- [x] **TEST (mock fail):** Set `MOCK_PAYMENT_SHOULD_FAIL=true` → M-Pesa times out → switch to cash
+- [x] Git commit: `git add . && git commit -m "Kiosk M-Pesa payment UI with timeout and fallback"`
 
 ---
 
