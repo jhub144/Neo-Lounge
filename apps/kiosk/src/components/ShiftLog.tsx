@@ -11,7 +11,9 @@ export default function ShiftLog() {
 
   const fetchDashboard = useCallback(() => {
     if (!pin) return;
-    getDashboard(pin).then(setData).catch(console.error);
+    getDashboard(pin).then(setData).catch(() => {
+      // Silently ignore — API may not be ready yet; interval will retry
+    });
   }, [pin]);
 
   // Refresh whenever sessions or stations change via WebSocket

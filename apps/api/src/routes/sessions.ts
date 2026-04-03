@@ -43,7 +43,6 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
     // For M-Pesa: session starts PENDING until the webhook confirms payment.
     // For Cash: session activates immediately.
     const sessionStatus = isMpesa ? 'PENDING' : 'ACTIVE';
-    const txStatus      = isMpesa ? 'PENDING'  : 'COMPLETED';
 
     // For M-Pesa: no transaction yet — it's created by POST /api/payments/mpesa/initiate
     // after the customer's phone number is collected.
@@ -53,7 +52,7 @@ router.post('/', requireStaff, async (req: Request, res: Response) => {
         staffPin,
         durationMinutes,
         authCode,
-        status: sessionStatus as any,
+        status: sessionStatus,
         ...(isMpesa ? {} : {
           transactions: {
             create: {
