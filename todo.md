@@ -357,21 +357,21 @@
 ## Stage 9: Video Pipeline + Security Cameras
 
 ### Prompt 39 — Video Pipeline Scaffold + Health Check
-- [ ] Initialise Python FastAPI project in `services/video-pipeline/`
-- [ ] Create `requirements.txt`: fastapi, uvicorn, httpx
-- [ ] Configure on port 8000
-- [ ] Create `main.py` with FastAPI app
-- [ ] `GET /pipeline/health` → `{ status: "ok", uptime, capture_streams: 0, cameras_recording: 0 }`
-- [ ] Create folder structure:
-  - [ ] `capture/` — station capture management
-  - [ ] `security/` — security camera recording
-  - [ ] `detection/` — YAMNet audio detection (placeholder)
-  - [ ] `config.py` — env variable configuration
-- [ ] Environment variables: `MAIN_API_URL`, `CAPTURE_BUFFER_DIR`, `REPLAY_DIR`, `SECURITY_RECORDING_DIR`, `SECURITY_CLIPS_DIR`, `USE_MOCK_CAPTURE`, `USE_MOCK_CAMERAS`
-- [ ] Create mock capture module (generates test video via ffmpeg instead of USB device)
-- [ ] **TEST:** `cd services/video-pipeline && uvicorn main:app --port 8000` → starts
-- [ ] **TEST:** `GET /pipeline/health` → returns ok
-- [ ] Git commit: `git add . && git commit -m "Video pipeline scaffold with health endpoint"`
+- [x] Initialise Python FastAPI project in `services/video-pipeline/`
+- [x] Create `requirements.txt`: fastapi, uvicorn, httpx
+- [x] Configure on port 8000
+- [x] Create `main.py` with FastAPI app
+- [x] `GET /pipeline/health` → `{ status: "ok", uptime, capture_streams: 0, cameras_recording: 0 }`
+- [x] Create folder structure:
+  - [x] `capture/` — station capture management
+  - [x] `security/` — security camera recording
+  - [x] `detection/` — YAMNet audio detection (placeholder)
+  - [x] `config.py` — env variable configuration
+- [x] Environment variables: `MAIN_API_URL`, `CAPTURE_BUFFER_DIR`, `REPLAY_DIR`, `SECURITY_RECORDING_DIR`, `SECURITY_CLIPS_DIR`, `USE_MOCK_CAPTURE`, `USE_MOCK_CAMERAS`
+- [x] Create mock capture module (generates test video via ffmpeg instead of USB device)
+- [x] **TEST:** `cd services/video-pipeline && uvicorn main:app --port 8000` → starts
+- [x] **TEST:** `GET /pipeline/health` → returns ok
+- [x] Git commit: `git add . && git commit -m "Video pipeline scaffold with health endpoint"`
 
 ### Prompt 40 — Station Capture Start/Stop + Buffer Management
 - [ ] `POST /capture/start/{station_id}`:
