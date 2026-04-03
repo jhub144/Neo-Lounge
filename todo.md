@@ -218,54 +218,54 @@
 
 ## Stage 7: M-Pesa Payment Integration
 
-### Prompt 33 — Africa's Talking Service Module + Mock
-- [ ] Create payment service interface in `services/payments.ts` (or matching existing pattern):
-  - [ ] `initiateStkPush(phoneNumber, amount, transactionId)` → `{success, checkoutRequestId}`
-  - [ ] `processCallback(payload)` → `{transactionId, success, receiptCode?}`
-  - [ ] `checkInternetAvailability()` → `boolean`
-- [ ] Create MOCK implementation:
-  - [ ] `initiateStkPush`: logs request, waits 3 seconds, returns success with fake checkout ID
-  - [ ] After 5 seconds, auto-triggers callback endpoint (simulates customer confirming)
-  - [ ] `MOCK_PAYMENT_SHOULD_FAIL` env variable — when true, simulates timeout
-  - [ ] `processCallback`: validates payload shape, returns success with fake receipt
-- [ ] Create REAL implementation stub:
-  - [ ] Uses `africastalking` npm package
-  - [ ] Reads `AT_API_KEY`, `AT_USERNAME`, `AT_ENVIRONMENT`, `AT_SHORTCODE` from env
-  - [ ] Clear TODO comments for real implementation
-- [ ] Factory pattern: export correct implementation based on `USE_MOCK_PAYMENTS` env variable
-- [ ] Write tests:
-  - [ ] Test `initiateStkPush` returns expected shape
-  - [ ] Test `processCallback` returns expected shape
-  - [ ] Test auto-callback simulation triggers after delay
-- [ ] **TEST:** `npm test` — all tests pass
-- [ ] Git commit: `git add . && git commit -m "Africa's Talking payment service with mock"`
+### Prompt 33 — Africa's Talking Service Module + Mock ✅
+- [x] Create payment service interface in `services/payments.ts` (or matching existing pattern):
+  - [x] `initiateStkPush(phoneNumber, amount, transactionId)` → `{success, checkoutRequestId}`
+  - [x] `processCallback(payload)` → `{transactionId, success, receiptCode?}`
+  - [x] `checkInternetAvailability()` → `boolean`
+- [x] Create MOCK implementation:
+  - [x] `initiateStkPush`: logs request, waits 3 seconds, returns success with fake checkout ID
+  - [x] After 5 seconds, auto-triggers callback endpoint (simulates customer confirming)
+  - [x] `MOCK_PAYMENT_SHOULD_FAIL` env variable — when true, simulates timeout
+  - [x] `processCallback`: validates payload shape, returns success with fake receipt
+- [x] Create REAL implementation stub:
+  - [x] Uses `africastalking` npm package
+  - [x] Reads `AT_API_KEY`, `AT_USERNAME`, `AT_ENVIRONMENT`, `AT_SHORTCODE` from env
+  - [x] Clear TODO comments for real implementation
+- [x] Factory pattern: export correct implementation based on `USE_MOCK_PAYMENTS` env variable
+- [x] Write tests:
+  - [x] Test `initiateStkPush` returns expected shape
+  - [x] Test `processCallback` returns expected shape
+  - [x] Test auto-callback simulation triggers after delay
+- [x] **TEST:** `npm test` — all tests pass
+- [x] Git commit: `git add . && git commit -m "Africa's Talking payment service with mock"`
 
-### Prompt 34 — M-Pesa API Endpoints + Webhook
-- [ ] `POST /api/payments/mpesa/initiate`:
-  - [ ] Requires: phoneNumber, amount, sessionId
-  - [ ] Validates Kenyan phone format (254XXXXXXXXX or 07XXXXXXXX → normalise to 254)
-  - [ ] Creates Transaction with status PENDING, method MPESA
-  - [ ] Calls `paymentService.initiateStkPush()`
-  - [ ] Locks station (status PENDING) to prevent concurrent bookings
-  - [ ] Returns `{ transactionId, status: "pending" }`
-- [ ] `POST /api/payments/mpesa/callback`:
-  - [ ] Calls `paymentService.processCallback(req.body)`
-  - [ ] Finds Transaction by checkoutRequestId
-  - [ ] IDEMPOTENT: if transaction already COMPLETED, return 200, do nothing
-  - [ ] On success: update Transaction to COMPLETED, store mpesaReceipt, activate session, emit `payment:confirmed`, create SecurityEvent
-  - [ ] On failure: update Transaction to FAILED, unlock station, emit `payment:timeout`
-  - [ ] Log full raw webhook payload to SecurityEvent metadata
-- [ ] Update `POST /api/sessions` to handle M-Pesa:
-  - [ ] If method is MPESA, create session in PENDING state, initiate STK push
-  - [ ] Session activates only when webhook confirms
-- [ ] `GET /api/payments/status` returns `{ mpesaAvailable: boolean }`
-- [ ] Write tests:
-  - [ ] Test initiate creates PENDING transaction
-  - [ ] Test callback completes transaction (idempotent)
-  - [ ] Test callback with already-completed transaction returns 200 without side effects
-  - [ ] Test failed payment unlocks station
-- [ ] **TEST:** `npm test` — all tests pass
-- [ ] Git commit: `git add . && git commit -m "M-Pesa initiate and callback endpoints"`
+### Prompt 34 — M-Pesa API Endpoints + Webhook ✅
+- [x] `POST /api/payments/mpesa/initiate`:
+  - [x] Requires: phoneNumber, amount, sessionId
+  - [x] Validates Kenyan phone format (254XXXXXXXXX or 07XXXXXXXX → normalise to 254)
+  - [x] Creates Transaction with status PENDING, method MPESA
+  - [x] Calls `paymentService.initiateStkPush()`
+  - [x] Locks station (status PENDING) to prevent concurrent bookings
+  - [x] Returns `{ transactionId, status: "pending" }`
+- [x] `POST /api/payments/mpesa/callback`:
+  - [x] Calls `paymentService.processCallback(req.body)`
+  - [x] Finds Transaction by checkoutRequestId
+  - [x] IDEMPOTENT: if transaction already COMPLETED, return 200, do nothing
+  - [x] On success: update Transaction to COMPLETED, store mpesaReceipt, activate session, emit `payment:confirmed`, create SecurityEvent
+  - [x] On failure: update Transaction to FAILED, unlock station, emit `payment:timeout`
+  - [x] Log full raw webhook payload to SecurityEvent metadata
+- [x] Update `POST /api/sessions` to handle M-Pesa:
+  - [x] If method is MPESA, create session in PENDING state, initiate STK push
+  - [x] Session activates only when webhook confirms
+- [x] `GET /api/payments/status` returns `{ mpesaAvailable: boolean }`
+- [x] Write tests:
+  - [x] Test initiate creates PENDING transaction
+  - [x] Test callback completes transaction (idempotent)
+  - [x] Test callback with already-completed transaction returns 200 without side effects
+  - [x] Test failed payment unlocks station
+- [x] **TEST:** `npm test` — all tests pass
+- [x] Git commit: `git add . && git commit -m "M-Pesa initiate and callback endpoints"`
 
 ### Prompt 35 — Kiosk M-Pesa UI Integration
 - [ ] Check M-Pesa availability on kiosk load (`GET /api/payments/status`)
