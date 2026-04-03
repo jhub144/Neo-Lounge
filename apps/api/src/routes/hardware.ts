@@ -7,24 +7,24 @@ import { tuyaService } from '../services/tuyaService';
 const router = Router();
 
 // GET /api/hardware/status
-// Returns mock connection status for all 4 stations' TV + LED controllers.
 router.get('/status', requireOwner, async (_req: Request, res: Response) => {
   try {
     const stations = await prisma.station.findMany({ orderBy: { id: 'asc' } });
 
     const statuses = await Promise.all(
       stations.map(async (station) => {
-        // Mock services always return success — hardware stage will add real checks
         const [tvResult, ledResult] = await Promise.allSettled([
-          adbService.switchToHDMI(station.adbAddress).then(() => true).catch(() => false),
-          tuyaService.activateSync(station.tuyaDeviceId).then(() => true).catch(() => false),
+          adbService.getStatus(station.adbAddress),
+          tuyaService.getStatus(station.tuyaDeviceId),
         ]);
 
         return {
           stationId: station.id,
           name: station.name,
-          tvConnected: tvResult.status === 'fulfilled' ? tvResult.value : false,
-          ledsConnected: ledResult.status === 'fulfilled' ? ledResult.value : false,
+          tvConnected:
+            tvResult.status === 'fulfilled' ? tvResult.value.connected : false,
+          ledsConnected:
+            ledResult.status === 'fulfilled' ? ledResult.value.connected : false,
           adbAddress: station.adbAddress || '(not configured)',
           tuyaDeviceId: station.tuyaDeviceId || '(not configured)',
         };
