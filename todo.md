@@ -415,33 +415,33 @@
 - [x] Git commit: `git add . && git commit -m "Clip extraction from buffer with replay registration"`
 
 ### Prompt 42 — YAMNet Audio Detection (Mock + Interface)
-- [ ] Create detection interface in `detection/`:
-  - [ ] `AudioDetector` class: `start(station_id)`, `stop(station_id)`, `on_event(callback)`
-  - [ ] Events: `{ station_id, event_type, confidence, timestamp }`
-  - [ ] Event types: `CROWD_ROAR`, `WHISTLE`, `MUSIC`
-- [ ] Mock implementation (`USE_MOCK_YAMNET=true`):
-  - [ ] Fires `CROWD_ROAR` every 90 seconds after starting
-  - [ ] Fires `WHISTLE` after 5 minutes
-  - [ ] Confidence always 0.85 (above threshold)
-  - [ ] Respects cooldown (default 45 seconds)
-- [ ] Real implementation stub (`USE_MOCK_YAMNET=false`):
-  - [ ] Extracts audio from ffmpeg capture stream
-  - [ ] Runs YAMNet TFLite inference
-  - [ ] Maps categories to trigger types
-  - [ ] TODO comments for real inference code
-- [ ] Wire detection events to clip extraction:
-  - [ ] `CROWD_ROAR` → extract clip
-  - [ ] `WHISTLE` → call `POST /api/games/{gameId}/end`, then extract clip
-  - [ ] Skip events within cooldown of last clip
-- [ ] Wire into capture lifecycle:
-  - [ ] Capture starts → start audio detection
-  - [ ] Capture stops → stop audio detection
-- [ ] Read settings from Main API: confidence threshold, cooldown, buffer before/after
-- [ ] **TEST:** Start session → wait ~90s → mock fires CROWD_ROAR → clip extracted
-- [ ] **TEST:** ReplayClip record in database
-- [ ] **TEST:** Tablet receives `replay:ready` WebSocket event
-- [ ] **TEST:** PWA shows the clip
-- [ ] Git commit: `git add . && git commit -m "YAMNet detection interface with mock implementation"`
+- [x] Create detection interface in `detection/`:
+  - [x] `AudioDetector` class: `start(station_id)`, `stop(station_id)`, `on_event(callback)`
+  - [x] Events: `{ station_id, event_type, confidence, timestamp }`
+  - [x] Event types: `CROWD_ROAR`, `WHISTLE`, `MUSIC`
+- [x] Mock implementation (`USE_MOCK_YAMNET=true`):
+  - [x] Fires `CROWD_ROAR` every 90 seconds after starting
+  - [x] Fires `WHISTLE` after 5 minutes
+  - [x] Confidence always 0.85 (above threshold)
+  - [x] Respects cooldown (default 45 seconds)
+- [x] Real implementation stub (`USE_MOCK_YAMNET=false`):
+  - [x] Extracts audio from ffmpeg capture stream
+  - [x] Runs YAMNet TFLite inference
+  - [x] Maps categories to trigger types
+  - [x] TODO comments for real inference code
+- [x] Wire detection events to clip extraction:
+  - [x] `CROWD_ROAR` → extract clip
+  - [x] `WHISTLE` → call `POST /api/games/{gameId}/end`, then extract clip
+  - [x] Skip events within cooldown of last clip
+- [x] Wire into capture lifecycle:
+  - [x] Capture starts → start audio detection
+  - [x] Capture stops → stop audio detection
+- [x] Read settings from Main API: confidence threshold, cooldown, buffer before/after
+- [x] **TEST:** Start session → wait ~90s → mock fires CROWD_ROAR → clip extracted
+- [x] **TEST:** ReplayClip record in database
+- [x] **TEST:** Tablet receives `replay:ready` WebSocket event
+- [x] **TEST:** PWA shows the clip
+- [x] Git commit: `git add . && git commit -m "YAMNet detection interface with mock implementation"`
 
 ### Prompt 43 — Security Camera Continuous Recording
 - [ ] `POST /security/start-recording`:

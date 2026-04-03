@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from capture.clips import ExtractRequest, extract_clip
+from detection.detector import detector
+from detection.pipeline import set_station_context, clear_station_context
 
 router = APIRouter()
 
@@ -31,6 +33,9 @@ async def start_capture(station_id: int, body: StartCaptureRequest) -> dict:
     cap = await main.capture_service.start(
         station_id, body.session_id, body.capture_device
     )
+    # Wire detection: set context then start audio detection
+    set_station_context(station_id, body.session_id, game_id=0)
+    await detector.start(station_id)
     return {
         "station_id": station_id,
         "pid": cap.pid,
@@ -42,6 +47,8 @@ async def start_capture(station_id: int, body: StartCaptureRequest) -> dict:
 @router.post("/stop/{station_id}", status_code=200)
 async def stop_capture(station_id: int) -> dict:
     import main
+    await detector.stop(station_id)
+    clear_station_context(station_id)
     await main.capture_service.stop(station_id)
     return {"station_id": station_id, "status": "stopped"}
 

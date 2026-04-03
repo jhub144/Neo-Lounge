@@ -3,10 +3,12 @@
 import time
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI
 
 import config
 from capture.mock_capture import MockCaptureService
+from detection.pipeline import init_pipeline
 
 # ── Service singletons ────────────────────────────────────────────────────────
 
@@ -16,9 +18,30 @@ START_TIME = time.time()
 capture_service: MockCaptureService = MockCaptureService()
 
 
+async def _load_settings_from_api() -> None:
+    """Pull detection settings from the Main API and override config defaults."""
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(f"{config.MAIN_API_URL}/api/settings")
+            resp.raise_for_status()
+            data = resp.json()
+            if "yamnetConfidenceThreshold" in data:
+                config.YAMNET_CONFIDENCE_THRESHOLD = float(data["yamnetConfidenceThreshold"])
+            if "clipCooldownSeconds" in data:
+                config.CLIP_COOLDOWN_SECONDS = int(data["clipCooldownSeconds"])
+            if "clipBufferBefore" in data:
+                config.CLIP_BUFFER_BEFORE = int(data["clipBufferBefore"])
+            if "clipBufferAfter" in data:
+                config.CLIP_BUFFER_AFTER = int(data["clipBufferAfter"])
+    except Exception:
+        pass  # Main API not available — use env defaults
+
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # type: ignore[type-arg]
+async def lifespan(_app: FastAPI):  # type: ignore[type-arg]
     capture_service.cleanup_orphaned_buffers()
+    await _load_settings_from_api()
+    init_pipeline()
     yield
     # Graceful shutdown — stop any running captures
     for status in capture_service.get_status():
@@ -51,5 +74,5 @@ async def health() -> dict:
         "status": "ok",
         "uptime": uptime,
         "capture_streams": running_captures,
-        "cameras_recording": 0,  # updated by security router
+        "cameras_recording": 0,
     }
