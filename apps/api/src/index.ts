@@ -16,6 +16,7 @@ import hardwareRouter from './routes/hardware';
 import systemRouter from './routes/system';
 import securityRouter from './routes/security';
 import paymentsRouter from './routes/payments';
+import clipsRouter from './routes/clips';
 import { initSocketService } from './services/socketService';
 import { startTimerService } from './services/timerService';
 import { adbService } from './services/adbService';
@@ -59,6 +60,7 @@ app.use('/api/hardware', hardwareRouter);
 app.use('/api/system', systemRouter);
 app.use('/api/security', securityRouter);
 app.use('/api/payments', paymentsRouter);
+app.use('/api/clips', clipsRouter);
 
 if (process.env.NODE_ENV !== 'test') {
   httpServer.listen(PORT, () => {

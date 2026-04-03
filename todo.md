@@ -399,20 +399,20 @@
 - [x] Git commit: `git add . && git commit -m "Station capture with rolling buffer management"`
 
 ### Prompt 41 — Clip Extraction Endpoint
-- [ ] `POST /clips/extract`:
-  - [ ] Input: `{ station_id, trigger_type, trigger_timestamp, buffer_before_seconds, buffer_after_seconds }`
-  - [ ] Finds relevant buffer segments for time window
-  - [ ] Uses `ffmpeg -c copy` to extract clip (zero re-encoding)
-  - [ ] Saves to `REPLAY_DIR/{session_id}/{game_id}/clip_{timestamp}.mp4`
-  - [ ] Calls Main API to register ReplayClip record
-  - [ ] Returns `{ clip_id, file_path, duration_seconds }`
-- [ ] Session and game context tracked from capture start request
-- [ ] Mock mode: copies short test video as the "clip", still registers with API
-- [ ] Add static file route to serve replay files for download
-- [ ] **TEST:** Start session (capture starts) → call `/clips/extract` → clip file created
-- [ ] **TEST:** Main API has ReplayClip record
-- [ ] **TEST:** PWA with session auth code shows the clip in the list
-- [ ] Git commit: `git add . && git commit -m "Clip extraction from buffer with replay registration"`
+- [x] `POST /clips/extract`:
+  - [x] Input: `{ station_id, trigger_type, trigger_timestamp, buffer_before_seconds, buffer_after_seconds }`
+  - [x] Finds relevant buffer segments for time window
+  - [x] Uses `ffmpeg -c copy` to extract clip (zero re-encoding)
+  - [x] Saves to `REPLAY_DIR/{session_id}/{game_id}/clip_{timestamp}.mp4`
+  - [x] Calls Main API to register ReplayClip record
+  - [x] Returns `{ clip_id, file_path, duration_seconds }`
+- [x] Session and game context tracked from capture start request
+- [x] Mock mode: copies short test video as the "clip", still registers with API
+- [x] Add static file route to serve replay files for download
+- [x] **TEST:** Start session (capture starts) → call `/clips/extract` → clip file created
+- [x] **TEST:** Main API has ReplayClip record
+- [x] **TEST:** PWA with session auth code shows the clip in the list
+- [x] Git commit: `git add . && git commit -m "Clip extraction from buffer with replay registration"`
 
 ### Prompt 42 — YAMNet Audio Detection (Mock + Interface)
 - [ ] Create detection interface in `detection/`:

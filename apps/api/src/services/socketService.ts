@@ -45,3 +45,7 @@ export function emitPowerStatus(status: 'normal' | 'save') {
 export function emitQueueUpdated(stationId: number) {
   io?.emit('queue:updated', { stationId });
 }
+
+export function emitClipReady(clipId: number, sessionId: number, gameId: number, triggerType: string, filePath: string) {
+  io?.emit('replay:ready', { clipId, sessionId, gameId, triggerType, filePath });
+}
