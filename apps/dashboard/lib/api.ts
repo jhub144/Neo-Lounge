@@ -109,6 +109,20 @@ export interface HardwareStatus {
   }[];
 }
 
+export type InternetRoute = 'primary' | '4g' | 'offline';
+
+export interface FailoverEvent {
+  timestamp: string;
+  from: InternetRoute;
+  to: InternetRoute;
+  reason: string;
+}
+
+export interface InternetStatus {
+  route: InternetRoute;
+  history: FailoverEvent[];
+}
+
 export interface Settings {
   id: number;
   baseHourlyRate: number;
@@ -176,6 +190,10 @@ export function restartService(pin: string, service: string): Promise<{ ok: bool
     method: 'POST',
     body: JSON.stringify({ service }),
   });
+}
+
+export function getInternetStatus(pin: string): Promise<InternetStatus> {
+  return apiFetch<InternetStatus>('/api/system/internet', pin);
 }
 
 export function getSettings(pin?: string): Promise<Settings> {

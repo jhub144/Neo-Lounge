@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { getHealth, getHardwareStatus, getCameras, restartService, type HardwareStatus, type SecurityCamera } from '@/lib/api';
+import { getHealth, getHardwareStatus, getCameras, restartService, getInternetStatus, type HardwareStatus, type SecurityCamera, type InternetStatus, type InternetRoute } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 interface HealthStatus {
@@ -19,6 +19,7 @@ export default function SystemTab() {
   const [health, setHealth] = useState<HealthStatus>({ api: 'loading', pipeline: 'loading' });
   const [hardware, setHardware] = useState<HardwareStatus | null>(null);
   const [cameras, setCameras] = useState<SecurityCamera[]>([]);
+  const [internet, setInternet] = useState<InternetStatus | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [restarting, setRestarting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,11 +44,16 @@ export default function SystemTab() {
       setHealth(prev => ({ ...prev, pipeline: 'not-running' }));
     }
 
-    // Hardware + cameras
+    // Hardware + cameras + internet
     try {
-      const [hw, cams] = await Promise.all([getHardwareStatus(pin), getCameras(pin)]);
+      const [hw, cams, inet] = await Promise.all([
+        getHardwareStatus(pin),
+        getCameras(pin),
+        getInternetStatus(pin),
+      ]);
       setHardware(hw);
       setCameras(cams);
+      setInternet(inet);
     } catch { /* keep null */ }
 
     setLoading(false);
@@ -186,6 +192,48 @@ export default function SystemTab() {
           </div>
         ) : (
           <p className="text-sm text-white/40">Unable to load hardware status</p>
+        )}
+      </section>
+
+      {/* Internet Connection */}
+      <section>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-3">Internet Connection</h2>
+        {loading ? (
+          <div className="card h-20 animate-pulse bg-white/5" />
+        ) : internet ? (
+          <div className="space-y-4">
+            <div className="card flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className={`dot ${internet.route === 'primary' ? 'dot-green' : internet.route === '4g' ? 'dot-amber' : 'dot-red'}`} />
+                <div>
+                  <p className="font-medium text-sm">
+                    {internet.route === 'primary' ? 'Primary Broadband' : internet.route === '4g' ? '4G Dongle (Failover)' : 'Offline'}
+                  </p>
+                  <p className="text-xs text-white/40">Current route</p>
+                </div>
+              </div>
+              <span className={`text-xs font-semibold ${internet.route === 'primary' ? 'text-[#22C55E]' : internet.route === '4g' ? 'text-amber-400' : 'text-red-400'}`}>
+                {internet.route === 'primary' ? 'Primary' : internet.route === '4g' ? '4G' : 'Offline'}
+              </span>
+            </div>
+
+            {internet.history.length > 0 && (
+              <div>
+                <p className="text-xs text-white/40 mb-2">Failover history (last 24h)</p>
+                <div className="space-y-1.5">
+                  {internet.history.slice().reverse().map((event, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs bg-white/5 rounded-lg px-3 py-2">
+                      <span className="text-white/60 font-mono">{new Date(event.timestamp).toLocaleTimeString()}</span>
+                      <span className="text-white/80">{event.from} → {event.to}</span>
+                      <span className="text-white/40 truncate max-w-[160px]">{event.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-white/40">Unable to load internet status</p>
         )}
       </section>
 

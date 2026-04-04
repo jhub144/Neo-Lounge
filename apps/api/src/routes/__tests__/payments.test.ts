@@ -2,6 +2,7 @@ import request from 'supertest';
 import app from '../../index';
 import prisma from '../../lib/prisma';
 import { paymentService } from '../../services/paymentService';
+import { internetService } from '../../services/internetService';
 import { emitPaymentConfirmed, emitPaymentTimeout } from '../../services/socketService';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -31,6 +32,15 @@ jest.mock('../../services/paymentService', () => {
   };
 });
 
+jest.mock('../../services/internetService', () => ({
+  internetService: {
+    getCurrentRoute: jest.fn().mockReturnValue('primary'),
+    getFailoverHistory: jest.fn().mockReturnValue([]),
+    start: jest.fn(),
+    stop: jest.fn(),
+  },
+}));
+
 jest.mock('../../services/socketService', () => ({
   initSocketService: jest.fn(),
   emitStationUpdate:    jest.fn(),
@@ -49,6 +59,7 @@ jest.mock('../../services/socketService', () => ({
 
 const mp   = prisma as jest.Mocked<typeof prisma>;
 const mps  = paymentService as { [K in keyof typeof paymentService]: jest.Mock };
+const mIS  = internetService as unknown as { getCurrentRoute: jest.Mock };
 const mSC  = { emitPaymentConfirmed: emitPaymentConfirmed as jest.Mock,
                emitPaymentTimeout:   emitPaymentTimeout   as jest.Mock };
 
@@ -73,30 +84,56 @@ const pendingTransaction = {
 beforeEach(() => {
   jest.clearAllMocks();
   (mp.$transaction as jest.Mock).mockResolvedValue([]);
+  mIS.getCurrentRoute.mockReturnValue('primary');
 });
 
 // ── GET /api/payments/status ──────────────────────────────────────────────────
 
 describe('GET /api/payments/status', () => {
-  test('returns mpesaAvailable: true when internet is up', async () => {
+  test('returns mpesaAvailable: true and internetRoute: primary when on primary', async () => {
+    mIS.getCurrentRoute.mockReturnValue('primary');
     mps.checkInternetAvailability.mockResolvedValue(true);
 
     const res = await request(app).get('/api/payments/status');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ mpesaAvailable: true });
+    expect(res.body).toEqual({ mpesaAvailable: true, internetRoute: 'primary' });
   });
 
-  test('returns mpesaAvailable: false when internet is down', async () => {
+  test('returns mpesaAvailable: true and internetRoute: 4g when on 4G dongle', async () => {
+    mIS.getCurrentRoute.mockReturnValue('4g');
+    mps.checkInternetAvailability.mockResolvedValue(true);
+
+    const res = await request(app).get('/api/payments/status');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ mpesaAvailable: true, internetRoute: '4g' });
+  });
+
+  test('returns mpesaAvailable: false and internetRoute: offline when offline', async () => {
+    mIS.getCurrentRoute.mockReturnValue('offline');
+    // paymentService should NOT be called when offline (short-circuit)
+    mps.checkInternetAvailability.mockResolvedValue(true);
+
+    const res = await request(app).get('/api/payments/status');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ mpesaAvailable: false, internetRoute: 'offline' });
+    expect(mps.checkInternetAvailability).not.toHaveBeenCalled();
+  });
+
+  test('returns mpesaAvailable: false when paymentService says unavailable', async () => {
+    mIS.getCurrentRoute.mockReturnValue('primary');
     mps.checkInternetAvailability.mockResolvedValue(false);
 
     const res = await request(app).get('/api/payments/status');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ mpesaAvailable: false });
+    expect(res.body).toMatchObject({ mpesaAvailable: false, internetRoute: 'primary' });
   });
 
   test('returns 500 on unexpected error', async () => {
+    mIS.getCurrentRoute.mockReturnValue('primary');
     mps.checkInternetAvailability.mockRejectedValue(new Error('network error'));
 
     const res = await request(app).get('/api/payments/status');

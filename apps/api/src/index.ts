@@ -21,6 +21,7 @@ import { initSocketService } from './services/socketService';
 import { startTimerService } from './services/timerService';
 import { adbService } from './services/adbService';
 import { tuyaService } from './services/tuyaService';
+import { internetService } from './services/internetService';
 import prisma from './lib/prisma';
 
 
@@ -67,6 +68,7 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`API server running on port ${PORT}`);
   });
   startTimerService();
+  internetService.start();
 
   // Initialise hardware services with all station addresses from the database
   prisma.station.findMany().then((stations) => {

@@ -4,6 +4,7 @@ import prisma from '../lib/prisma';
 import { adbService } from '../services/adbService';
 import { tuyaService } from '../services/tuyaService';
 import { emitPowerStatus, emitStationUpdate } from '../services/socketService';
+import { internetService } from '../services/internetService';
 
 const router = Router();
 
@@ -157,6 +158,16 @@ router.post('/power-restore', requireOwner, async (req: Request, res: Response) 
     console.error('[system] POST /power-restore error:', err);
     res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
   }
+});
+
+// ── GET /api/system/internet ──────────────────────────────────────────────────
+// Returns current internet route and recent failover history.
+
+router.get('/internet', requireOwner, (_req: Request, res: Response) => {
+  res.json({
+    route: internetService.getCurrentRoute(),
+    history: internetService.getFailoverHistory(24),
+  });
 });
 
 export default router;

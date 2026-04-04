@@ -532,32 +532,32 @@
 - [x] Git commit: `git add . && git commit -m "Power failure preservation and restore"`
 
 ### Prompt 46 — Internet Failover + Health Monitoring
-- [ ] Create `services/internet.ts` (or update existing connectivity module):
-  - [ ] `checkPrimaryInternet()`: ping reliable endpoint
-  - [ ] `check4GDongle()`: check if dongle connected + has signal
-  - [ ] `getCurrentRoute()`: returns `"primary"` | `"4g"` | `"offline"`
-- [ ] Internet health monitor:
-  - [ ] Check connectivity every 15 seconds
-  - [ ] Primary fails → set route to 4G, log event
-  - [ ] Primary recovers → switch back, log event
-  - [ ] Both fail → set route to offline
-- [ ] Wire into payment service:
-  - [ ] When offline, `checkInternetAvailability()` returns false
-  - [ ] Kiosk disables M-Pesa, shows "Cash only — no internet"
-  - [ ] When primary or 4G, M-Pesa available
-- [ ] Update `GET /api/payments/status`:
-  - [ ] Returns `{ mpesaAvailable, internetRoute: "primary" | "4g" | "offline" }`
-- [ ] Dashboard System tab:
-  - [ ] Show current internet route
-  - [ ] Show failover history (last 24 hours of route changes)
-- [ ] Mock mode: `USE_MOCK_HARDWARE=true` → always report primary available
-- [ ] `MOCK_INTERNET_ROUTE` env variable to simulate states for testing
-- [ ] Write tests:
-  - [ ] Payment status reflects internet availability
-  - [ ] Failover: primary → 4G → offline → primary
-  - [ ] M-Pesa endpoints reject when offline
-- [ ] **TEST:** `npm test` — all tests pass
-- [ ] Git commit: `git add . && git commit -m "Internet failover with 4G fallback"`
+- [x] Create `services/internet.ts` (or update existing connectivity module):
+  - [x] `checkPrimaryInternet()`: ping reliable endpoint
+  - [x] `check4GDongle()`: check if dongle connected + has signal
+  - [x] `getCurrentRoute()`: returns `"primary"` | `"4g"` | `"offline"`
+- [x] Internet health monitor:
+  - [x] Check connectivity every 15 seconds
+  - [x] Primary fails → set route to 4G, log event
+  - [x] Primary recovers → switch back, log event
+  - [x] Both fail → set route to offline
+- [x] Wire into payment service:
+  - [x] When offline, `checkInternetAvailability()` returns false
+  - [x] Kiosk disables M-Pesa, shows "Cash only — no internet"
+  - [x] When primary or 4G, M-Pesa available
+- [x] Update `GET /api/payments/status`:
+  - [x] Returns `{ mpesaAvailable, internetRoute: "primary" | "4g" | "offline" }`
+- [x] Dashboard System tab:
+  - [x] Show current internet route
+  - [x] Show failover history (last 24 hours of route changes)
+- [x] Mock mode: `USE_MOCK_HARDWARE=true` → always report primary available
+- [x] `MOCK_INTERNET_ROUTE` env variable to simulate states for testing
+- [x] Write tests:
+  - [x] Payment status reflects internet availability
+  - [x] Failover: primary → 4G → offline → primary
+  - [x] M-Pesa endpoints reject when offline
+- [x] **TEST:** `npm test` — all tests pass
+- [x] Git commit: `git add . && git commit -m "Internet failover with 4G fallback"`
 
 ### Prompt 47 — End-to-End Integration Test
 - [ ] Start all services: PostgreSQL, Main API, Kiosk, Tablet, PWA, Dashboard, Video Pipeline

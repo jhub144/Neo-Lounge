@@ -6,6 +6,7 @@ import { emitStationUpdate, emitPaymentConfirmed, emitPaymentTimeout } from '../
 import { adbService } from '../services/adbService';
 import { tuyaService } from '../services/tuyaService';
 import { captureService } from '../services/captureService';
+import { internetService } from '../services/internetService';
 
 const router = Router();
 
@@ -14,8 +15,10 @@ const router = Router();
 
 router.get('/status', async (_req: Request, res: Response) => {
   try {
-    const mpesaAvailable = await paymentService.checkInternetAvailability();
-    res.json({ mpesaAvailable });
+    const internetRoute = internetService.getCurrentRoute();
+    const mpesaAvailable =
+      internetRoute !== 'offline' && (await paymentService.checkInternetAvailability());
+    res.json({ mpesaAvailable, internetRoute });
   } catch (err) {
     console.error('[payments] GET /status error:', err);
     res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });

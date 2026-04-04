@@ -33,6 +33,15 @@ jest.mock('../../services/socketService', () => ({
   emitStationUpdate: jest.fn(),
 }));
 
+jest.mock('../../services/internetService', () => ({
+  internetService: {
+    getCurrentRoute: jest.fn().mockReturnValue('primary'),
+    getFailoverHistory: jest.fn().mockReturnValue([]),
+    start: jest.fn(),
+    stop: jest.fn(),
+  },
+}));
+
 import { emitPowerStatus } from '../../services/socketService';
 
 const mp = prisma as jest.Mocked<typeof prisma>;
