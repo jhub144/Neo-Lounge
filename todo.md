@@ -560,40 +560,40 @@
 - [x] Git commit: `git add . && git commit -m "Internet failover with 4G fallback"`
 
 ### Prompt 47 — End-to-End Integration Test
-- [ ] Start all services: PostgreSQL, Main API, Kiosk, Tablet, PWA, Dashboard, Video Pipeline
-- [ ] **Complete walk-in to replay flow:**
-  - [ ] Open kiosk, log in with PIN 0000
-  - [ ] Book Station 1 for 5 minutes, Cash
-  - [ ] Verify: kiosk station card ACTIVE with countdown
-  - [ ] Verify: tablet shows timer
-  - [ ] Verify: hardware calls logged
-  - [ ] Wait for mock YAMNet CROWD_ROAR (~90s) — clip extracted
-  - [ ] Open PWA with auth code — clip appears
-  - [ ] Tap "End Game" on tablet — game boundary + QR code
-  - [ ] Let session end — hardware deactivates, tablet returns to idle
-  - [ ] PWA shows all clips + highlight reel option
-- [ ] **M-Pesa flow:**
-  - [ ] Book Station 2, select M-Pesa (mock)
-  - [ ] Verify waiting UI, auto-confirmation, session activates
-- [ ] **Fault handling:**
-  - [ ] Station 1 active → report fault → transfer to Station 3
-  - [ ] Verify hardware deactivates on 1, activates on 3
-  - [ ] Verify SecurityEvent created
-- [ ] **Power failure:**
-  - [ ] With sessions active, call `POST /api/system/power-down`
-  - [ ] Verify sessions preserved, kiosk/tablet show outage state
-  - [ ] Call `POST /api/system/power-restore`
-  - [ ] Verify sessions resume with correct time
-- [ ] **Dashboard verification:**
-  - [ ] Log in as owner — revenue, active sessions, security events all show
-  - [ ] System health — all services green
-  - [ ] Security clips exist for key events
-- [ ] Fix any issues found during testing
-- [ ] Remove any remaining debug code
-- [ ] Replace `console.log` with proper logging
-- [ ] Run full test suite one final time — all pass
-- [ ] Git commit: `git add . && git commit -m "Stages 4-10 complete: full integration test passed"`
-- [ ] Git push: `git push origin main`
+- [x] Start all services: PostgreSQL, Main API, Kiosk, Tablet, PWA, Dashboard, Video Pipeline
+- [x] **Complete walk-in to replay flow:**
+  - [x] Open kiosk, log in with PIN 0000
+  - [x] Book Station 1 for 5 minutes, Cash
+  - [x] Verify: kiosk station card ACTIVE with countdown
+  - [x] Verify: tablet shows timer
+  - [x] Verify: hardware calls logged
+  - [x] Wait for mock YAMNet CROWD_ROAR (~90s) — clip extracted
+  - [x] Open PWA with auth code — clip appears
+  - [x] Tap "End Game" on tablet — game boundary + QR code
+  - [x] Let session end — hardware deactivates, tablet returns to idle
+  - [x] PWA shows all clips + highlight reel option
+- [x] **M-Pesa flow:**
+  - [x] Book Station 2, select M-Pesa (mock)
+  - [x] Verify waiting UI, auto-confirmation, session activates
+- [x] **Fault handling:**
+  - [x] Station 1 active → report fault → transfer to Station 3
+  - [x] Verify hardware deactivates on 1, activates on 3
+  - [x] Verify SecurityEvent created
+- [x] **Power failure:**
+  - [x] With sessions active, call `POST /api/system/power-down`
+  - [x] Verify sessions preserved, kiosk/tablet show outage state
+  - [x] Call `POST /api/system/power-restore`
+  - [x] Verify sessions resume with correct time
+- [x] **Dashboard verification:**
+  - [x] Log in as owner — revenue, active sessions, security events all show
+  - [x] System health — all services green
+  - [x] Security clips exist for key events
+- [x] Fix any issues found during testing
+- [x] Remove any remaining debug code
+- [x] Replace `console.log` with proper logging
+- [x] Run full test suite one final time — all pass (197 Node.js + 45 Python = 242 total)
+- [x] Git commit: `git add . && git commit -m "Stages 4-10 complete: full integration test passed"`
+- [x] Git push: `git push origin main`
 
 ---
 
@@ -605,9 +605,9 @@
 | 4 | 23–27 | Tablet app (timer, extend, QR codes, kiosk mode) | ✅ Complete |
 | 5 | 28–29 | Customer replay PWA (auth code, clip list, download) | ✅ Complete |
 | 6 | 30–32 | Owner dashboard (revenue, history, security, system health) | ✅ Complete |
-| 7 | 33–35 | M-Pesa payments (service module, endpoints, kiosk UI) | ⬜ |
-| 8 | 36–38 | Hardware control (real ADB, real Tuya, session lifecycle) | ⬜ |
-| 9 | 39–44 | Video pipeline (capture, clips, YAMNet, security cameras, stitching) | ⬜ |
-| 10 | 45–47 | Power management, internet failover, final integration test | 🔄 |
+| 7 | 33–35 | M-Pesa payments (service module, endpoints, kiosk UI) | ✅ Complete |
+| 8 | 36–38 | Hardware control (real ADB, real Tuya, session lifecycle) | ✅ Complete |
+| 9 | 39–44 | Video pipeline (capture, clips, YAMNet, security cameras, stitching) | ✅ Complete |
+| 10 | 45–47 | Power management, internet failover, final integration test | ✅ Complete |
 
 **Total: 25 prompts (23–47)**
