@@ -18,6 +18,7 @@ export default function Home() {
   const [activeStation, setActiveStation] = useState<Station | null>(null);
   const [extendSessionId, setExtendSessionId] = useState<number | null>(null);
   const [hardwareStatus, setHardwareStatus] = useState<Map<number, HardwareStationStatus>>(new Map());
+  const [powerBanner, setPowerBanner] = useState<'save' | 'normal' | null>(null);
 
   const refreshStations = useCallback(() => {
     if (!pin) return;
@@ -28,6 +29,7 @@ export default function Home() {
     onStationUpdated: refreshStations,
     onQueueUpdated: refreshStations,
     onSessionEnded: refreshStations,
+    onPowerStatus: (status) => setPowerBanner(status),
   });
 
   const refreshHardwareStatus = useCallback(() => {
@@ -52,6 +54,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen p-8 max-w-7xl mx-auto">
+      {powerBanner === 'save' && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-red-600/95 text-white text-center py-3 text-sm font-semibold tracking-wide">
+          ⚠ Power outage detected — sessions preserved
+        </div>
+      )}
+      {powerBanner === 'normal' && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-green-600/95 text-white text-center py-3 text-sm font-semibold tracking-wide">
+          ✓ Power restored — sessions resuming
+        </div>
+      )}
       <header className="mb-10 flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">PlayStation Lounge</h1>
         <div className="flex items-center gap-4">

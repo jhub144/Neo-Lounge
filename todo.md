@@ -501,35 +501,35 @@
 ## Stage 10: Power Management + Resilience
 
 ### Prompt 45 — Power Down + Restore Endpoints
-- [ ] `POST /api/system/power-down`:
-  - [ ] For all ACTIVE sessions: calculate and save `remainingAtPowerLoss`
-  - [ ] Mark active sessions as `POWER_INTERRUPTED`
-  - [ ] Call `adbService.setBrightness(stationId, 50)` for active stations
-  - [ ] Call `adbService.powerOff(stationId)` for unused stations
-  - [ ] Call `tuyaService.turnOff(stationId)` for unused stations
-  - [ ] Create SecurityEvent type `POWER_LOSS`
-  - [ ] Emit `power:status` WebSocket event to all clients
-  - [ ] Return `{ sessionsPreserved, timestamp }`
-- [ ] `POST /api/system/power-restore`:
-  - [ ] Find all `POWER_INTERRUPTED` sessions
-  - [ ] Restore each: status back to ACTIVE, remaining time from `remainingAtPowerLoss`
-  - [ ] Re-activate hardware: ADB switchToHdmi + brightness 100, Tuya sync mode
-  - [ ] Resume timer service for restored sessions
-  - [ ] Create SecurityEvent type `POWER_RESTORE`
-  - [ ] Emit `power:status` WebSocket event
-  - [ ] Return `{ sessionsRestored, timestamp }`
-- [ ] Kiosk handles `power:status`:
-  - [ ] Power-down: banner "Power outage detected — sessions preserved"
-  - [ ] Power-restore: banner "Power restored — sessions resuming"
-- [ ] Tablet handles `power:status`:
-  - [ ] Power-down: show "Power outage — your session time is saved"
-  - [ ] Power-restore: resume normal countdown
-- [ ] Write tests:
-  - [ ] Create 2 active sessions → power down → sessions are POWER_INTERRUPTED with correct remaining time
-  - [ ] Power restore → sessions are ACTIVE with correct remaining time
-  - [ ] SecurityEvents created for both
-- [ ] **TEST:** `npm test` — all tests pass
-- [ ] Git commit: `git add . && git commit -m "Power failure preservation and restore"`
+- [x] `POST /api/system/power-down`:
+  - [x] For all ACTIVE sessions: calculate and save `remainingAtPowerLoss`
+  - [x] Mark active sessions as `POWER_INTERRUPTED`
+  - [x] Call `adbService.setBrightness(stationId, 50)` for active stations
+  - [x] Call `adbService.powerOff(stationId)` for unused stations
+  - [x] Call `tuyaService.turnOff(stationId)` for unused stations
+  - [x] Create SecurityEvent type `POWER_LOSS`
+  - [x] Emit `power:status` WebSocket event to all clients
+  - [x] Return `{ sessionsPreserved, timestamp }`
+- [x] `POST /api/system/power-restore`:
+  - [x] Find all `POWER_INTERRUPTED` sessions
+  - [x] Restore each: status back to ACTIVE, remaining time from `remainingAtPowerLoss`
+  - [x] Re-activate hardware: ADB switchToHdmi + brightness 100, Tuya sync mode
+  - [x] Resume timer service for restored sessions
+  - [x] Create SecurityEvent type `POWER_RESTORE`
+  - [x] Emit `power:status` WebSocket event
+  - [x] Return `{ sessionsRestored, timestamp }`
+- [x] Kiosk handles `power:status`:
+  - [x] Power-down: banner "Power outage detected — sessions preserved"
+  - [x] Power-restore: banner "Power restored — sessions resuming"
+- [x] Tablet handles `power:status`:
+  - [x] Power-down: show "Power outage — your session time is saved"
+  - [x] Power-restore: resume normal countdown
+- [x] Write tests:
+  - [x] Create 2 active sessions → power down → sessions are POWER_INTERRUPTED with correct remaining time
+  - [x] Power restore → sessions are ACTIVE with correct remaining time
+  - [x] SecurityEvents created for both
+- [x] **TEST:** `npm test` — all tests pass
+- [x] Git commit: `git add . && git commit -m "Power failure preservation and restore"`
 
 ### Prompt 46 — Internet Failover + Health Monitoring
 - [ ] Create `services/internet.ts` (or update existing connectivity module):
@@ -608,6 +608,6 @@
 | 7 | 33–35 | M-Pesa payments (service module, endpoints, kiosk UI) | ⬜ |
 | 8 | 36–38 | Hardware control (real ADB, real Tuya, session lifecycle) | ⬜ |
 | 9 | 39–44 | Video pipeline (capture, clips, YAMNet, security cameras, stitching) | ⬜ |
-| 10 | 45–47 | Power management, internet failover, final integration test | ⬜ |
+| 10 | 45–47 | Power management, internet failover, final integration test | 🔄 |
 
 **Total: 25 prompts (23–47)**

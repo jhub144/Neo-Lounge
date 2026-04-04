@@ -66,6 +66,7 @@ export default function TabletPage() {
   const [connected, setConnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
+  const [powerOutage, setPowerOutage] = useState(false);
 
   // App state
   const [tabletState, setTabletState] = useState<TabletState>('connecting');
@@ -252,10 +253,9 @@ export default function TabletPage() {
     // power:status
     socket.on('power:status', (data: { status: string }) => {
       if (data.status === 'save') {
-        // Show power outage overlay — reuse a simple state
-        console.log('[tablet] power:status save — session time preserved');
+        setPowerOutage(true);
       } else {
-        console.log('[tablet] power:status normal — resuming');
+        setPowerOutage(false);
       }
     });
 
@@ -534,6 +534,12 @@ export default function TabletPage() {
       className={`fixed inset-0 flex flex-col items-center justify-between bg-[#0F172A] select-none ${glowClass}`}
     >
       {reconnecting && <ReconnectingBanner />}
+
+      {powerOutage && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-red-600/95 text-white text-center py-3 text-sm font-semibold tracking-wide">
+          ⚠ Power outage — your session time is saved
+        </div>
+      )}
 
       {/* Top row — station name (tap 5x for settings) */}
       <div className="pt-10 w-full flex items-center justify-center">
