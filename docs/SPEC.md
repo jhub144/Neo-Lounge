@@ -302,10 +302,8 @@ Filesystem: XFS, mounted with noatime
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | /api/system/health/temperature | Owner | Current CPU temperature |
-| GET | /api/system/health/nvme | Owner | NVMe health (percentage used, unsafe shutdowns) |
-| GET | /api/system/health/services | Owner | All systemd service states |
-| GET | /api/system/health/disk | Owner | NVMe free space |
+| GET | /api/system/health | Owner | Combined hardware health: CPU temp, NVMe SMART (percentUsed, temperature), disk free space, per-service systemd state for all Stage 11 pipeline units, and `warning: true` when CPU temp exceeds `Settings.alertTempCelsius` |
+| GET | /api/system/pipeline-health | Owner | Pipeline throughput: ClipJob counts by status (PENDING/EXTRACTING/STITCHING/ENHANCING/DONE/FAILED) over the last 24h, GameReplay detection counts, and per-station ring buffer stats (segment count, oldest/newest mtimes in `/run/lounge/tvN/`) |
 
 ### WebSocket Events (socket.io)
 
