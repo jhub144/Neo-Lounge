@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0F172A;
+  --foreground: #ffffff;
+  --ps-blue: #2563EB;
+  --amber: #F59E0B;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-ps-blue: var(--ps-blue);
+  --color-amber: var(--amber);
+}
+
+/* Kiosk mode — no browser chrome */
+* {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-x pan-y;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Prevent pull-to-refresh on mobile Chrome */
+body {
+  overscroll-behavior: none;
+}
+
+/* Hide scrollbars */
+::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes amber-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px 4px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 60px 16px rgba(245, 158, 11, 0.5);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-amber-pulse {
+  animation: amber-pulse 1.5s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}

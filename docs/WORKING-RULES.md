@@ -15,6 +15,18 @@
 
 ---
 
+## Environment & Tooling Constraints
+- **Operating System:** WSL2 (Ubuntu)
+- **Project Root Path:** `/home/janderson/devprojects/Neo-Lounge`
+- **MCP Server:** Use **jCodeMunch** located at `/home/janderson/.local/bin/jcodemunch-mcp`.
+- **Command Execution:**
+  - Always use absolute Linux paths for the `Cwd` parameter (e.g., `/home/janderson/...`).
+  - NEVER use Windows paths or UNC paths (no `\\wsl.localhost\`).
+  - PostgreSQL management is passwordless (`sudo service postgresql start`).
+- **Efficiency:** Prioritize jCodeMunch for symbol searches and indexing to minimize credit usage.
+
+---
+
 ## 2. Code Quality Rules
 
 ### Follow Existing Patterns

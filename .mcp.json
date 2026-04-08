@@ -1,12 +1,12 @@
 {
-      "mcpServers": {
-          "jcodemunch": {
-                "command": "pipx",
-                      "args": ["run", "jcodemunch-mcp"]
-                          },
-                              "codemode": {
-                                    "command": "npx",
-                                          "args": ["-y", "@utcp/code-mode-mcp"]
-                                              }
-                                                }
-                                                }
+  "mcpServers": {
+    "jcodemunch": {
+      "command": "/home/janderson/.local/bin/jcodemunch-mcp",
+      "args": []
+    },
+    "codemode": {
+      "command": "npx",
+      "args": ["-y", "@utcp/code-mode-mcp"]
+    }
+  }
+}
