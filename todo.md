@@ -611,3 +611,493 @@
 | 10 | 45–47 | Power management, internet failover, final integration test | ✅ Complete |
 
 **Total: 25 prompts (23–47)**
+
+---
+
+## Stage 11: Enhanced Video Pipeline — Ring Buffer, Game Intelligence & AI Replays
+
+> All prompts 48–64 are in `docs/PROMPT-PLAN-STAGES-4-10.md`. Start every session with:
+> `Read docs/WORKING-RULES.md and docs/SPEC.md.`
+
+---
+
+### Prompt 48 — Database Schema: New Models and Fields
+
+- [ ] Open `apps/api/prisma/schema.prisma`
+- [ ] Add enum `EventType`: `CROWD_NOISE | GOAL_AUDIO | CELEBRATION | CARD_EVENT | MATCH_END | GAME_REPLAY`
+- [ ] Add enum `ClipJobStatus`: `PENDING | EXTRACTING | STITCHING | AI_EFFECTS | DONE | FAILED`
+- [ ] Add model `PendingEvent` with all fields (id, stationId, sessionId, type, source, detectedAt, preRollSeconds, postRollSeconds, peakAmplitude, gameMinute, scoreDelta, mergedIntoId, createdAt)
+- [ ] Add model `ClipJob` with all fields (id, stationId, sessionId, eventIds, status, tvClipPath, webcamClipPath, stitchedClipPath, finalClipPath, portraitClipPath, errorMessage, enqueuedAt, startedAt, completedAt)
+- [ ] Add model `GameReplay` with all fields (id, stationId, sessionId, detectedAt, startSegment, endSegment, clipPath, durationSeconds, createdAt)
+- [ ] Add model `MatchState` with all fields (id, stationId unique, homeScore, awayScore, matchMinute, phase, isReplayOnScreen, lastUpdated)
+- [ ] Add `webcamDevice` and `analysisWebcamDevice` fields to `Station` model
+- [ ] Add pipeline settings to `Settings` model: `tvRingBufferSeconds`, `clipPreRollSeconds`, `clipPostRollSeconds`, `eventMergeWindowSeconds`, `gameAnalysisEnabled`, `audioDetectionEnabled`, `stage2Enabled`, `stage3Enabled`, `yamnetThresholdBase`
+- [ ] Run `npx prisma migrate dev --name enhanced_video_pipeline` — migration applies cleanly
+- [ ] Run `npx prisma generate` — no errors
+- [ ] Write `apps/api/src/services/__tests__/schema.test.ts` (create MatchState, PendingEvent, ClipJob — read back, assert fields, clean up)
+- [ ] Run schema test — passes
+- [ ] Commit: `"feat(db): add PendingEvent, ClipJob, GameReplay, MatchState schema"`
+
+---
+
+### Prompt 49 — Capture Infrastructure: tmpfs Ring Buffer for TV Streams
+
+- [ ] Create `services/video-pipeline/capture/ring_buffer.py`
+  - [ ] Class `RingBuffer(station_id, buffer_dir, max_age_seconds=120)`
+  - [ ] Method `prune()` — deletes segments older than max_age_seconds
+  - [ ] Method `get_segments_in_window(start_dt, end_dt) -> list[Path]`
+  - [ ] Method `get_segment_for_time(dt) -> Path | None`
+  - [ ] Segment filename pattern: `seg_{unix_timestamp}.ts`
+- [ ] Create `services/video-pipeline/capture/pruner.py`
+  - [ ] Loop calling `RingBuffer.prune()` every 5 seconds per station
+  - [ ] Reads `STATION_COUNT` (default 4) and `RING_BUFFER_DIR` (default `/run/lounge`) from env
+  - [ ] Logs pruned file count at DEBUG level
+- [ ] Update `services/video-pipeline/capture/tv_capture.py`
+  - [ ] Output directory changed to `{RING_BUFFER_DIR}/tv{station_id}/`
+  - [ ] Segment duration stays at 2 seconds
+  - [ ] `-c copy` preserved (no transcode)
+  - [ ] Segment filename: `seg_%s.ts` (Unix timestamp via strftime)
+  - [ ] `mkdir -p` output directory before starting ffmpeg
+- [ ] Create systemd unit `neo-lounge-tv-capture@.service` (template, per-station, WatchdogSec=30)
+- [ ] Create systemd unit `neo-lounge-ring-pruner.service`
+- [ ] Write `services/video-pipeline/tests/test_ring_buffer.py`
+  - [ ] Fake `.ts` files with varied mtimes — assert `prune()` deletes old, keeps recent
+  - [ ] `get_segments_in_window()` with known range — assert correct files returned
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(capture): tmpfs ring buffer with pruner and systemd units"`
+
+---
+
+### Prompt 50 — Capture Infrastructure: Webcam and Security Camera Services
+
+- [ ] Create `services/video-pipeline/capture/webcam_capture.py`
+  - [ ] Reads `STATION_ID` and `WEBCAM_DEVICE` from env
+  - [ ] Output: `/var/lounge/sessions/{session_id}/webcam/`, 10-second segments, `seg_%s.ts`
+  - [ ] 720p 120fps capture: `-framerate 120 -video_size 1280x720 -c copy`
+  - [ ] Polls API every 5s for active session — starts/stops ffmpeg accordingly
+  - [ ] SIGTERM to ffmpeg when session ends
+- [ ] Create `services/video-pipeline/capture/security_capture.py`
+  - [ ] Reads camera list from `/etc/lounge/cameras.json`
+  - [ ] Output: `/var/lounge/security/{camera_id}/`, 300-second segments
+  - [ ] `-c copy`, runs continuously
+  - [ ] Deletes segments older than 72 hours
+- [ ] Create systemd unit `neo-lounge-webcam@.service` (template, per-station)
+- [ ] Create systemd unit `neo-lounge-security-cam@.service` (template, per-camera)
+- [ ] Write `services/video-pipeline/tests/test_webcam_capture.py`
+  - [ ] Mock ffmpeg subprocess and API — assert correct args built
+  - [ ] Assert SIGTERM sent when session ends
+  - [ ] Assert ffmpeg not running when no active session
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(capture): webcam 120fps and security camera capture services"`
+
+---
+
+### Prompt 51 — Audio Event Detector: YAMNet + EventMerger
+
+- [ ] Update `services/video-pipeline/audio/detector.py`
+  - [ ] Replace direct DB write with `INSERT INTO "PendingEvent"` (type, source='audio', detectedAt, peakAmplitude, preRollSeconds=10, postRollSeconds=15)
+  - [ ] Read `yamnetThresholdBase` from Settings at startup, refresh every 60s
+  - [ ] Reduce threshold by 0.05 when `gameMinute >= 80` or `scoreDelta == 0` (tense moment)
+  - [ ] Log detected event type and amplitude at INFO level
+- [ ] Create `services/video-pipeline/audio/event_merger.py`
+  - [ ] Class `EventMerger(db_conn, merge_window_seconds)`
+  - [ ] `run_merge_cycle()`: query unmerged PendingEvents, group by station+session, sort by time
+  - [ ] Merge events within `merge_window_seconds` of each other (set `mergedIntoId`)
+  - [ ] For each surviving root event/cluster: compute combined window, check for existing ClipJob, create if missing
+  - [ ] Issue `NOTIFY clip_jobs_channel, '{stationId}'` after creating ClipJob
+  - [ ] `start(interval_seconds=3)`: run merge cycle in loop
+- [ ] Create systemd unit `neo-lounge-audio-detector@.service` (template, per-station)
+- [ ] Create systemd unit `neo-lounge-event-merger.service`
+- [ ] Write `services/video-pipeline/tests/test_event_merger.py`
+  - [ ] 3 events at T=0, T=5, T=20 (merge window=8s) — assert T=0+T=5 merge, T=20 separate
+  - [ ] Assert 2 ClipJobs created
+  - [ ] Assert `B.mergedIntoId = A.id`
+  - [ ] Assert no duplicate ClipJob created when cluster already exists
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(audio): YAMNet detector writes PendingEvents, EventMerger creates ClipJobs"`
+
+---
+
+### Prompt 52 — Game Stream Analyzer
+
+- [ ] Create `services/video-pipeline/game_analyzer/frame_reader.py`
+  - [ ] Class `FrameReader(station_id, video_source)`
+  - [ ] ffmpeg pipe: `-vf scale=427:240 -r 2 -f rawvideo -pix_fmt bgr24 pipe:1`
+  - [ ] Reads frames as numpy arrays `(240, 427, 3)` in a loop
+  - [ ] Handles pipe EOF — restarts after 2s delay
+- [ ] Create `services/video-pipeline/game_analyzer/detectors.py`
+  - [ ] `detect_replay_banner(frame) -> bool`: template match vs `assets/templates/replay_banner.png`, confidence > 0.75
+  - [ ] `detect_card_flash(frame) -> str | None`: HSV blob detection for red/yellow in centre-right region
+  - [ ] `detect_goal_flash(frame, prev_frame) -> bool`: mean absolute difference > 40
+  - [ ] `extract_score_and_minute(frame) -> tuple[str, str]`: tesseract OCR on top-centre crop, whitelist digits/colon/dash
+- [ ] Create `services/video-pipeline/game_analyzer/analyzer.py`
+  - [ ] Class `GameAnalyzer(station_id, db_conn, video_source)`
+  - [ ] On `detect_replay_banner=True`: UPDATE MatchState `isReplayOnScreen=True`, create `GAME_REPLAY` PendingEvent if none in last 30s
+  - [ ] On banner disappearing: UPDATE `isReplayOnScreen=False`
+  - [ ] On `detect_card_flash=red`: create `CARD_EVENT` PendingEvent
+  - [ ] On `detect_goal_flash=True`: create `GOAL_AUDIO` PendingEvent
+  - [ ] On score change from OCR: UPDATE MatchState scores/minute, create `GOAL_AUDIO` PendingEvent
+  - [ ] Debounce: no duplicate event of same type within 20s per station
+- [ ] Create systemd unit `neo-lounge-game-analyzer@.service` (template, per-station)
+- [ ] Write `services/video-pipeline/tests/test_detectors.py`
+  - [ ] Synthetic frame with red rectangle — assert `detect_card_flash` returns `"red"`
+  - [ ] Two identical frames — assert `detect_goal_flash` returns False
+  - [ ] Frame vs all-white frame — assert `detect_goal_flash` returns True
+  - [ ] Mock tesseract — assert `extract_score_and_minute` parses `"2:1"` and `"43"` correctly
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(analyzer): game stream analysis at 240p/2fps with event writing"`
+
+---
+
+### Prompt 53 — Clip Extraction Worker (Stage 1)
+
+- [ ] Create `services/video-pipeline/workers/clip_extractor.py`
+  - [ ] Startup: open psycopg2 connection, run `LISTEN clip_jobs_channel`
+  - [ ] Main loop: `select()` blocking wait for NOTIFY (30s timeout for watchdog keepalive)
+  - [ ] `process_next_job()`: `SELECT ... FOR UPDATE SKIP LOCKED`, oldest PENDING first (FIFO)
+  - [ ] Update job status to `EXTRACTING`, set `startedAt`
+  - [ ] `extract_tv_clip(job)`: compute window, call `RingBuffer.get_segments_in_window()`, write concat file, run `ffmpeg -f concat -safe 0 -c copy`, verify > 5s with ffprobe
+  - [ ] `extract_webcam_clip(job)`: same pattern on webcam segments dir, return None if no segments (log warning)
+  - [ ] Update job: set `tvClipPath`, `webcamClipPath`, status=`STITCHING`
+  - [ ] Issue `NOTIFY stitch_jobs_channel, '{job_id}'`
+  - [ ] On exception: update status=`FAILED`, set `errorMessage`, log at ERROR
+- [ ] Create `services/video-pipeline/workers/ffprobe_utils.py`
+  - [ ] `get_duration(path) -> float`: ffprobe duration in seconds
+  - [ ] `verify_clip(path, min_duration=5.0) -> bool`: exists + duration >= min
+- [ ] Create systemd unit `neo-lounge-clip-extractor.service` (single instance, WatchdogSec=30)
+- [ ] Write `services/video-pipeline/tests/test_clip_extractor.py`
+  - [ ] Mock ffmpeg and ffprobe, mock DB + NOTIFY
+  - [ ] Assert `FOR UPDATE SKIP LOCKED` used
+  - [ ] Assert correct concat file written with right segment paths
+  - [ ] Assert duration < 5s → `RuntimeError` raised, job set to `FAILED`
+  - [ ] Assert ring buffer miss → job set to `FAILED` with descriptive message
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(worker): Stage 1 clip extraction via LISTEN/NOTIFY and ring buffer"`
+
+---
+
+### Prompt 54 — FIFA In-Game Replay Harvesting
+
+- [ ] Create `services/video-pipeline/workers/replay_harvester.py`
+  - [ ] Class `ReplayHarvester(db_conn, ring_buffer_dir)`
+  - [ ] Maintains per-station `{station_id: replay_start_time | None}` dict
+  - [ ] `poll()`: query all MatchState rows
+    - [ ] `isReplayOnScreen=True` + no active harvest → record start time, INSERT `GameReplay` row
+    - [ ] `isReplayOnScreen=False` + active harvest → compute window, call `extract_replay_clip()`, clear active harvest
+  - [ ] `extract_replay_clip(station_id, session_id, start_dt, end_dt, replay_id)`:
+    - [ ] Get segments from RingBuffer for window
+    - [ ] `ffmpeg -f concat -c copy` → `/var/lounge/sessions/{session_id}/replays/fifa_{replay_id}.ts`
+    - [ ] Verify duration > 3s
+    - [ ] UPDATE `GameReplay` with `clipPath`, `durationSeconds`, `endSegment`
+  - [ ] `poll()` runs every 1 second
+- [ ] Create systemd unit `neo-lounge-replay-harvester.service` (WatchdogSec=30)
+- [ ] Write `services/video-pipeline/tests/test_replay_harvester.py`
+  - [ ] `isReplayOnScreen` True at T=0, False at T=15 — assert one GameReplay, extract called with 15s window
+  - [ ] Two consecutive `poll()` calls while still True — assert no duplicate harvest started
+  - [ ] Buffer miss on replay end — assert GameReplay row created but `clipPath` stays null, error logged
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(worker): FIFA in-game replay harvester from ring buffer"`
+
+---
+
+### Prompt 55 — Stage 2 Stitch Worker: TV + Webcam PiP Overlay
+
+- [ ] Create `services/video-pipeline/workers/stitch_worker.py`
+  - [ ] Startup: `LISTEN stitch_jobs_channel`
+  - [ ] `process_next_stitch()`: `SELECT ... WHERE status='STITCHING' FOR UPDATE SKIP LOCKED`
+  - [ ] If no webcam clip: simple remux `ffmpeg -i {tvClip} -c copy stitched_{id}.mp4`
+  - [ ] If webcam clip exists: build `filter_complex` PiP overlay (webcam 320×180 bottom-right, 20px margin)
+  - [ ] Encode: `-c:v h264_qsv -preset fast -b:v 3M -c:a aac -b:a 128k`
+  - [ ] Fallback: if `h264_qsv` fails → retry with `-c:v libx264 -preset fast -crf 23`
+  - [ ] Verify output > 5s
+  - [ ] If `stage3Enabled`: update status=`AI_EFFECTS`, `NOTIFY ai_effects_channel`
+  - [ ] If stage 3 disabled: update status=`DONE`, upsert `ReplayClip`, emit WebSocket `replay:clip_ready`
+- [ ] Create systemd unit `neo-lounge-stitch-worker.service`
+- [ ] Write `services/video-pipeline/tests/test_stitch_worker.py`
+  - [ ] Webcam present → assert `filter_complex` PiP command built correctly
+  - [ ] Webcam absent → assert simple remux (no `filter_complex`)
+  - [ ] `h264_qsv` fails → assert `libx264` fallback attempted
+  - [ ] Output < 5s → job set to `FAILED`
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(worker): Stage 2 PiP stitch worker with Quick Sync encode and fallback"`
+
+---
+
+### Prompt 56 — Caption Library: JSON Structure and Selection Logic
+
+- [ ] Create `services/video-pipeline/captions/captions.json`
+  - [ ] Schema: `id`, `context`, `emotion`, `conditions` (minMinute, maxMinute, scoreDelta), `text_en`, `text_sw`
+  - [ ] At least 40 entries covering: goals (first half, 80th+ minute), equalisers, red cards, celebrations when winning, despair when losing, last-minute shock, generic crowd noise
+  - [ ] Sheng/Swahili texts are natural and punchy (e.g. "Nilikuambia!", "Wacha mchezo!", "Pole pole ndo mwendo... mpaka sasa!")
+- [ ] Create `services/video-pipeline/captions/selector.py`
+  - [ ] `load_captions(path) -> list[dict]`
+  - [ ] `select_caption(captions, context, emotion, match_state) -> dict`
+    - [ ] Filter by context (exact, fallback to "generic")
+    - [ ] Filter by emotion (exact, fallback to any)
+    - [ ] Filter by conditions (minute range, scoreDelta if specified)
+    - [ ] Pick randomly from top 5 candidates
+    - [ ] Return hardcoded fallback if zero candidates
+  - [ ] `get_caption_text(caption, lang="sw") -> str`
+- [ ] Write `services/video-pipeline/tests/test_caption_selector.py`
+  - [ ] `context="goal"`, `emotion="joy"`, `minute=85`, `scoreDelta=0` → returns equaliser/late-goal caption
+  - [ ] `context="card_red"`, `emotion="shock"` → returns red card caption
+  - [ ] No exact emotion match → still returns a caption (fallback works)
+  - [ ] 10 calls with same inputs → varied results (randomization confirmed)
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(captions): caption library JSON with 40+ entries and context-aware selector"`
+
+---
+
+### Prompt 57 — Stage 3 AI Effects Worker: Face Detection, Emotion, Zoom, Slow-Mo
+
+- [ ] Create `services/video-pipeline/workers/ai_effects_worker.py`
+  - [ ] Startup: `LISTEN ai_effects_channel`
+  - [ ] `process_next_ai_job()`: `SELECT ... WHERE status='AI_EFFECTS' FOR UPDATE SKIP LOCKED`
+  - [ ] Step 1 — Sample frames from webcam PiP region (1 frame/0.5s) using OpenCV `VideoCapture`
+  - [ ] Step 2 — YuNet face detection (`face_detection_yunet_2023mar.onnx`, confidence > 0.7), find peak-confidence frame
+  - [ ] Step 3 — FER MobileNet emotion (`fer_mobilenet.onnx` via onnxruntime), dominant emotion across sampled frames
+  - [ ] Step 4 — Caption selection: map event type → context, use detected emotion + MatchState
+  - [ ] Step 5 — Build ffmpeg command:
+    - [ ] 2 faces → split-screen zoom both face regions
+    - [ ] 1 face → single face zoom centred
+    - [ ] 0 faces → full frame, no zoom
+    - [ ] `setpts=0.5*PTS` for real 2× slow-mo (120fps source → 60fps output)
+    - [ ] `drawtext` for caption burn-in (Swahili text, white, black box background, bottom-centre)
+    - [ ] Landscape output: 1280×720, `-c:v libx264 -preset fast -crf 22 -r 60`
+    - [ ] Portrait output: crop 9:16 centred on face x, scale 1080×1920
+  - [ ] Step 6 — Verify both outputs > 5s
+  - [ ] Step 7 — Update `ClipJob` (`finalClipPath`, `portraitClipPath`, status=`DONE`, `completedAt`)
+  - [ ] Upsert `ReplayClip` with `finalClipPath`
+  - [ ] Emit WebSocket `replay:clip_ready` (include `portraitClipPath` in payload)
+- [ ] Create systemd unit `neo-lounge-ai-effects-worker.service` (WatchdogSec=60)
+- [ ] Write `services/video-pipeline/tests/test_ai_effects_worker.py`
+  - [ ] Mock OpenCV (5 synthetic frames, face region on frame 3)
+  - [ ] Mock YuNet (one bounding box)
+  - [ ] Mock FER ONNX (`{"joy": 0.85, "neutral": 0.15}`)
+  - [ ] Assert caption selector called with `emotion="joy"`
+  - [ ] Assert ffmpeg called with `setpts=0.5*PTS` and `drawtext` filter
+  - [ ] Assert portrait path differs from landscape path
+  - [ ] Assert both `verify_clip` calls made
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(worker): Stage 3 AI effects — face zoom, 2x slow-mo, captions, portrait crop"`
+
+---
+
+### Prompt 58 — Highlight Reel Assembly
+
+- [ ] Create `services/video-pipeline/workers/reel_assembler.py`
+  - [ ] Class `ReelAssembler(db_conn, session_id, station_id)`
+  - [ ] `is_session_complete() -> bool`: session status=`COMPLETED` AND all ClipJobs done/failed AND at least 1 DONE
+  - [ ] `assemble()`:
+    - [ ] Fetch all DONE ClipJobs sorted by `enqueuedAt ASC`
+    - [ ] Generate title card PNG with Pillow (dark bg, white text, "Station N — Match Highlights"), encode as 3s video
+    - [ ] For each clip: generate numbered transition card ("Moment N"), encode as 1s video
+    - [ ] Build concat list: title + (transition + clip) pairs
+    - [ ] `ffmpeg -f concat -c copy` with watermark `drawtext` overlay (20px corner) → `reel_landscape.mp4`
+    - [ ] Generate QR code PNG (`qrcode` library), encode as 3s video, append to concat
+    - [ ] Portrait reel: use `portraitClipPath` per clip + portrait-format title/transitions → `reel_portrait.mp4`
+    - [ ] UPDATE `Session` with `reelPath` and `portraitReelPath`
+    - [ ] Emit WebSocket `replay:reel_ready` with reel URLs
+  - [ ] Periodic trigger: every 30s scan COMPLETED sessions without reel, call `assemble()` if `is_session_complete()`
+- [ ] Create systemd unit `neo-lounge-reel-assembler.service`
+- [ ] Write `services/video-pipeline/tests/test_reel_assembler.py`
+  - [ ] 3 DONE ClipJobs — assert concat list has title + 3 (transition + clip) pairs
+  - [ ] Assert QR code video appended at end
+  - [ ] Assert portrait reel uses `portraitClipPath` not `finalClipPath`
+  - [ ] Assert `Session.reelPath` updated after assembly
+  - [ ] Assert WebSocket event emitted
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(worker): highlight reel assembly with title cards, transitions, QR code frame"`
+
+---
+
+### Prompt 59 — Tablet UX Updates: Notifications, Live Counter, QR Code
+
+- [ ] Update `apps/tablet/src/lib/socket.ts`
+  - [ ] Listen for `replay:clip_ready` → increment `clipReadyCount`
+  - [ ] Listen for `replay:all_ready` → set `allReady=true`, store reel URLs
+  - [ ] Listen for `replay:reel_ready` → set `reelReady=true`, store reel QR URL
+- [ ] Create `apps/tablet/src/components/ReplayStatus.tsx`
+  - [ ] Props: `{ clipReadyCount, totalClips, reelReady, reelQrUrl }`
+  - [ ] Show `"X moments captured so far"` counter while `clipReadyCount > 0` and session active
+  - [ ] NO clip thumbnails, NO clip preview, NO clip URLs shown anywhere
+  - [ ] When `reelReady=true`: show `"Your highlight reel is ready!"` notification banner
+  - [ ] Show `qrcode.react` QR code pointing to `reelQrUrl`
+  - [ ] Caption: `"Scan to watch and share your highlights"`
+  - [ ] Text large enough to read from 1.5m, dark theme
+- [ ] Update `apps/tablet/src/app/page.tsx` (active session page)
+  - [ ] Add `ReplayStatus` below countdown timer
+  - [ ] Pass `clipReadyCount` and `reelReady` from socket listeners
+- [ ] Ensure no clip URLs rendered anywhere on tablet — confirm with code review
+- [ ] Write `apps/tablet/src/__tests__/ReplayStatus.test.tsx` (React Testing Library)
+  - [ ] `clipReadyCount=0` — assert counter not shown
+  - [ ] `clipReadyCount=2`, `reelReady=false` — assert "2 moments captured" shown, no QR code
+  - [ ] `reelReady=true`, `reelQrUrl` set — assert notification banner and QR code visible
+  - [ ] Assert no `<img>` or `<video>` tags referencing clip paths
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(tablet): replay counter, reel-ready notification, and QR code (no preview)"`
+
+---
+
+### Prompt 60 — PWA Updates: Portrait Download and Live Progress
+
+- [ ] Update replay PWA clip list page
+  - [ ] For each DONE clip: add `"Portrait (9:16)"` download button alongside existing landscape button
+  - [ ] Both buttons use existing auth-code-protected download endpoint
+- [ ] Add live progress indicator
+  - [ ] While any ClipJob is `PENDING/EXTRACTING/STITCHING/AI_EFFECTS`: show `"Processing your highlights… X of Y ready"` with animated progress bar
+  - [ ] When all done: hide bar, show `"All highlights ready!"`
+  - [ ] Subscribe to `replay:clip_ready` WebSocket event to increment done count in real-time
+- [ ] Add highlight reel section below clip list
+  - [ ] While reel not ready: show `"Highlight reel compiling…"` with spinner
+  - [ ] On `replay:reel_ready`: show landscape and portrait reel download buttons
+  - [ ] Show share hint: `"Save to gallery and share on WhatsApp or TikTok"`
+- [ ] Update `GET /api/replays/:sessionId` response
+  - [ ] Include `portraitClipPath` (or `portraitUrl`) per clip
+  - [ ] Include `status` per clip
+  - [ ] Include top-level: `totalClips`, `doneClips`, `reelReady`, `reelUrl`, `portraitReelUrl`
+- [ ] Write `apps/pwa/src/__tests__/ReplayPage.test.tsx`
+  - [ ] 2 clips (1 DONE, 1 AI_EFFECTS), `reelReady=false` — assert progress bar shows "1 of 2 ready"
+  - [ ] DONE clip shows both landscape and portrait download buttons
+  - [ ] AI_EFFECTS clip shows no download button
+  - [ ] Simulate `replay:reel_ready` event → assert reel download buttons appear
+- [ ] Write/update `apps/api/src/routes/__tests__/replays.test.ts`
+  - [ ] `GET /api/replays/:sessionId` returns `portraitClipPath` and `status` per clip
+  - [ ] Returns `totalClips` and `doneClips` counts
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(pwa): portrait download, live progress bar, highlight reel download"`
+
+---
+
+### Prompt 61 — Dashboard Health Endpoints: Temperature, NVMe, Pipeline Status
+
+- [ ] Create `apps/api/src/services/healthService.ts`
+  - [ ] `getCpuTemperature()`: read `/sys/class/thermal/thermal_zone0/temp`, divide by 1000
+  - [ ] `getNvmeHealth()`: run `smartctl -j -a /dev/nvme0`, extract `percentage_used` and temperature; graceful fallback if smartctl unavailable
+  - [ ] `getPipelineStatus()`: run `systemctl is-active` for all 6 pipeline services, return dict of service → status
+- [ ] Create `GET /api/system/health/hardware` (owner auth required)
+  - [ ] Returns `{ cpuTemp, nvme: { healthy, percentUsed, temperature }, pipeline: { ...statuses } }`
+  - [ ] If `cpuTemp > 80`: include `warning: true`
+- [ ] Create `GET /api/system/health/pipeline`
+  - [ ] ClipJob counts by status for last 24 hours
+  - [ ] GameReplay clips harvested today
+  - [ ] Ring buffer stats per station (segment count, oldest/newest segment age)
+- [ ] Update owner dashboard frontend
+  - [ ] Hardware health card: CPU temp gauge (green/amber/red), NVMe % used bar, service dots
+  - [ ] Auto-refresh every 30 seconds
+- [ ] Write `apps/api/src/services/__tests__/healthService.test.ts`
+  - [ ] Mock `fs.readFile` for thermal zone — assert correct temp
+  - [ ] Mock `exec` for smartctl JSON — assert `percentUsed` extracted
+  - [ ] Mock `systemctl` output — assert service statuses parsed
+- [ ] Write `apps/api/src/routes/__tests__/health.test.ts`
+  - [ ] `GET /api/system/health/hardware` returns 200 with correct shape
+  - [ ] `cpuTemp > 80` → `warning: true` in response
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(health): CPU temp, NVMe SMART, pipeline status endpoints and dashboard panel"`
+
+---
+
+### Prompt 62 — Reliability: systemd Watchdog, UPS Shutdown, Temperature SMS
+
+- [ ] Verify all pipeline systemd units include `WatchdogSec=30` and `NotifyAccess=main`
+  - [ ] `neo-lounge-tv-capture@.service`
+  - [ ] `neo-lounge-ring-pruner.service`
+  - [ ] `neo-lounge-webcam@.service`
+  - [ ] `neo-lounge-audio-detector@.service`
+  - [ ] `neo-lounge-event-merger.service`
+  - [ ] `neo-lounge-game-analyzer@.service`
+  - [ ] `neo-lounge-clip-extractor.service`
+  - [ ] `neo-lounge-replay-harvester.service`
+  - [ ] `neo-lounge-stitch-worker.service`
+  - [ ] `neo-lounge-ai-effects-worker.service` (WatchdogSec=60)
+  - [ ] `neo-lounge-reel-assembler.service`
+- [ ] Add `sdnotify` watchdog keepalive to each Python worker's main loop (`n.notify("WATCHDOG=1")` every loop iteration)
+- [ ] Create `services/system/ups_shutdown.sh`
+  - [ ] `pkill -SIGTERM -f "ffmpeg.*seg_%s.ts"` then 3s sleep
+  - [ ] `psql -U lounge -c "CHECKPOINT;"`
+  - [ ] `systemctl poweroff`
+  - [ ] Include comment block explaining NUT `upsmon.conf` wiring
+- [ ] Create `services/system/temp_monitor.py`
+  - [ ] Read thermal zone temp every 60s
+  - [ ] Maintain `consecutive_high` counter
+  - [ ] 3 consecutive readings > 80°C → send SMS via Africa's Talking to `Settings.ownerPhone`
+  - [ ] Message: `"⚠️ Neo Lounge alert: CPU temperature is {temp}°C. Check ventilation."`
+  - [ ] 30-minute minimum between alerts (reset counter after sending)
+  - [ ] Drop below 75°C resets counter
+  - [ ] Log temp at DEBUG every cycle
+- [ ] Create systemd unit `neo-lounge-temp-monitor.service`
+- [ ] Write `services/system/tests/test_temp_monitor.py`
+  - [ ] 3 consecutive reads > 80°C → assert SMS sent exactly once
+  - [ ] 4th read > 80°C within 30min → assert no second SMS
+  - [ ] Read below 75°C resets counter → 3 more high reads needed before next SMS
+  - [ ] Mock Africa's Talking client — assert correct message and phone number
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(reliability): systemd watchdog notify, UPS clean shutdown, temperature SMS"`
+
+---
+
+### Prompt 63 — Storage Lifecycle: 1-Hour Session Cleanup
+
+- [ ] Create `services/video-pipeline/workers/session_cleanup.py`
+  - [ ] Query: `Session WHERE status='COMPLETED' AND endTime < NOW() - 1 hour AND purgedAt IS NULL`
+  - [ ] For each session: `shutil.rmtree(/var/lounge/sessions/{session_id}/)` (catch and log errors, continue)
+  - [ ] UPDATE `Session.purgedAt = NOW()`
+  - [ ] NULL out all file paths on associated `ClipJob` rows
+  - [ ] Log `"Session {id} purged: {MB}MB freed"`
+- [ ] Create systemd unit `neo-lounge-session-cleanup.service` (Type=oneshot)
+- [ ] Create systemd timer `neo-lounge-session-cleanup.timer` (`OnCalendar=*:0/5` — every 5 minutes)
+- [ ] Update `GET /api/replays/:sessionId`
+  - [ ] If `session.purgedAt` is set: return `410 Gone` with `"This session's replays have expired. Sessions are available for 1 hour after completion."`
+- [ ] Write `services/video-pipeline/tests/test_session_cleanup.py`
+  - [ ] Session ended 61 min ago with files present → assert `shutil.rmtree` called, `purgedAt` set, ClipJob paths nulled
+  - [ ] Session ended 59 min ago → assert NOT cleaned
+  - [ ] `shutil.rmtree` raises `PermissionError` → assert error logged, continues to next session
+- [ ] Run tests — pass
+- [ ] Commit: `"feat(lifecycle): 1-hour session cleanup worker with purge tracking"`
+
+---
+
+### Prompt 64 — Full Integration Test: Enhanced Pipeline End-to-End
+
+- [ ] Create `services/video-pipeline/tests/test_pipeline_integration.py`
+  - [ ] Setup: real test DB, mock ffmpeg (exit 0, touch output files), mock YuNet/FER (one face, emotion="joy"), mock Africa's Talking, real Session + MatchState rows
+  - [ ] Step 1: Session starts → confirm `MatchState` row created
+  - [ ] Step 2: 3 `PendingEvent` rows written at T=0, T=5, T=25 (source="audio", type=CROWD_NOISE)
+  - [ ] Step 3: `EventMerger.run_merge_cycle()` → assert T=0+T=5 merged (1 ClipJob), T=25 separate (1 ClipJob) = 2 total
+  - [ ] Step 4: game analyzer writes `PendingEvent` at T=40 (GAME_REPLAY) → assert 3rd ClipJob created
+  - [ ] Step 5: replay harvester — `isReplayOnScreen=True` for 12s → assert 1 `GameReplay` row with `clipPath` set
+  - [ ] Step 6: clip extractor runs all 3 jobs → assert all move `EXTRACTING → STITCHING`, `tvClipPath` set
+  - [ ] Step 7: stitch worker runs all 3 → assert all move `STITCHING → AI_EFFECTS`, `stitchedClipPath` set
+  - [ ] Step 8: AI effects worker runs all 3 → assert all move `AI_EFFECTS → DONE`, `finalClipPath` and `portraitClipPath` set
+  - [ ] Step 9: session ends (`status=COMPLETED`, `endTime=NOW()`)
+  - [ ] Step 10: reel assembler runs → assert `Session.reelPath` set, WebSocket `replay:reel_ready` emitted
+  - [ ] Step 11: cleanup worker with session ended < 1 hour → assert NOT purged; advance mock time 61 min → run cleanup → assert `session.purgedAt` set, directories deleted
+  - [ ] All assertions must pass — fix any issues found
+- [ ] Run integration test — all assertions pass
+- [ ] Commit: `"test(integration): full enhanced pipeline end-to-end test — all stages green"`
+
+---
+
+## Stage 11 Summary
+
+| Prompt | Status | What Gets Built |
+|--------|--------|----------------|
+| 48 | ⬜ | DB schema: PendingEvent, ClipJob, GameReplay, MatchState + new fields |
+| 49 | ⬜ | TV ring buffer (tmpfs) with pruner and systemd units |
+| 50 | ⬜ | Webcam 120fps capture + security camera capture services |
+| 51 | ⬜ | YAMNet detector → PendingEvent + EventMerger → ClipJob + NOTIFY |
+| 52 | ⬜ | Game stream analyzer at 240p/2fps (template match, OCR, events) |
+| 53 | ⬜ | Stage 1 clip extraction worker (LISTEN/NOTIFY, FIFO, ffmpeg -c copy) |
+| 54 | ⬜ | FIFA in-game replay harvester |
+| 55 | ⬜ | Stage 2 stitch worker (PiP overlay, Quick Sync, x264 fallback) |
+| 56 | ⬜ | Caption library JSON (40+ Sheng/Swahili entries) + selector |
+| 57 | ⬜ | Stage 3 AI effects (YuNet, FER, zoom, 2× slow-mo, captions, portrait) |
+| 58 | ⬜ | Highlight reel assembly (title cards, transitions, QR frame) |
+| 59 | ⬜ | Tablet UX: counter, notification, QR code (no preview, no SMS) |
+| 60 | ⬜ | PWA: portrait download, live progress, reel download |
+| 61 | ⬜ | Dashboard: CPU temp, NVMe SMART, pipeline service status |
+| 62 | ⬜ | Reliability: watchdog keepalive, UPS shutdown, temp SMS |
+| 63 | ⬜ | Storage lifecycle: 1-hour cleanup, 410 Gone on purged replays |
+| 64 | ⬜ | Full end-to-end integration test |
+
+**Total new prompts: 17 (48–64)**
