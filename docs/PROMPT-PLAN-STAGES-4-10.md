@@ -358,7 +358,7 @@ Add system monitoring to the dashboard:
    - Show "Restarting..." spinner, then re-check health after 10 seconds
 
 3. Hardware status panel:
-   - Per-station: TV connection status, LED controller status
+   - Per-station: TV connection status, Tuya sync box status
    - This reads from the mock hardware services for now — show connected/disconnected badges
    - Add a GET /api/hardware/status endpoint to the API that queries the mock ADB and Tuya services for all 4 stations
 
@@ -549,42 +549,45 @@ Commit: "Real ADB service with TV control and auto-reconnect"
 
 ---
 
-### Prompt 37 — Real Tuya LED Service Implementation
+### Prompt 37 — Tuya HDMI Sync Box Control (tinytuya Local API)
 
 ```text
-Read docs/WORKING-RULES.md and docs/SPEC.md (Section 10.2 — LED Lighting).
+Read docs/WORKING-RULES.md and docs/SPEC.md (Section 2 — Tuya HDMI Sync Box, and Section 17 — User Journey).
 
-Implement the real Tuya LED hardware service:
+The Tuya HDMI Sync Box sits in the signal chain per station:
+PS5 → Splitter (1×2) → TV (direct) AND → Sync Box (reads HDMI for LEDs, passthrough) → Capture Card → USB → PC.
+It is controlled over local WiFi using the tinytuya Python library (Tuya Local API).
+DPs: DP 20 (power on/off), DP 21 (mode: "hdmi" for gameplay sync, "colour" for static ambient), DP 24 (HSV color value for colour mode).
 
-1. Install tinytuya npm package (or use the Python tinytuya via a child process / microservice call — pick whichever approach fits the existing codebase better)
+1. Install tinytuya (Python package) in the video pipeline service.
 
 2. Update the Tuya service module with the real implementation:
-   - Each station has a tuyaDeviceId field in the database
-   - Tuya devices need: deviceId, localKey, and IP address (stored in env or database)
+   - Each station has tuyaDeviceId, tuyaLocalKey, tuyaIp fields in config or database
+   - Use tinytuya.BulbDevice(device_id, ip, local_key) with version 3.3
 
 3. Implement LED control modes:
-   - setSyncMode(stationId): activates HDMI sync — LEDs follow the gameplay colours
-   - setAmbientMode(stationId): slow colour pulse in PlayStation blue (#2563EB)
-   - turnOff(stationId): LEDs completely off
-   - getStatus(stationId): check if Tuya device is reachable
+   - setHdmiSync(stationId): DP 20=True, DP 21="hdmi" — LEDs follow HDMI gameplay colours via sync box
+   - setAmbientColor(stationId, hsv?): DP 20=True, DP 21="colour", DP 24=hsv — static ambient color
+   - turnOff(stationId): DP 20=False — LEDs completely off
+   - getStatus(stationId): check if Tuya device is reachable via local network
 
 4. Wire into session lifecycle:
-   - Session starts → setSyncMode
-   - Session ends → setAmbientMode
+   - Session starts → setHdmiSync (LEDs follow gameplay)
+   - Session ends → setAmbientColor (warm ambient glow)
    - Power save (unused stations) → turnOff
 
 5. Add connection monitoring + auto-reconnect (same pattern as ADB)
 
-6. Update GET /api/hardware/status to include LED controller status
+6. Update GET /api/hardware/status to include sync box status
 
 7. Use USE_MOCK_TUYA environment variable for switching.
 
 Write tests:
-- Test each mode sends the correct Tuya command
+- Test each mode sends the correct DP values via tinytuya
 - Test connection failure handling
 - Test auto-reconnect logic
 
-Commit: "Real Tuya LED service with sync, ambient, and off modes"
+Commit: "Tuya HDMI Sync Box control via tinytuya Local API — sync, ambient, off modes"
 ```
 
 ---
@@ -601,12 +604,12 @@ Wire hardware control into the session lifecycle:
 1. When a session is created (POST /api/sessions) and payment is confirmed:
    - Call adbService.switchToHdmi(stationId) — switch TV to PS5 input
    - Call adbService.setBrightness(stationId, 100) — full brightness
-   - Call tuyaService.setSyncMode(stationId) — LEDs follow gameplay
-   - If any hardware call fails, log the error but DON'T block the session — the customer can still play even if LEDs fail
+   - Call tuyaService.setHdmiSync(stationId) — sync box LEDs follow gameplay via HDMI
+   - If any hardware call fails, log the error but DON'T block the session — the customer can still play even if sync box fails
 
 2. When a session ends (PATCH /api/sessions/:id/end):
    - Call adbService.switchToAndroidTv(stationId) — TV shows screensaver/home
-   - Call tuyaService.setAmbientMode(stationId) — slow blue pulse
+   - Call tuyaService.setAmbientColor(stationId) — warm ambient glow via sync box
    - Again, failures should log but not block
 
 3. When a session is transferred (POST /api/sessions/:id/transfer):
@@ -614,12 +617,12 @@ Wire hardware control into the session lifecycle:
    - Activate hardware on new station (same as session start)
 
 4. Add graceful degradation:
-   - If hardware fails, add a warning badge on the kiosk station card: "TV not responding" or "LEDs offline"
+   - If hardware fails, add a warning badge on the kiosk station card: "TV not responding" or "Sync box offline"
    - The kiosk hardware status panel (from Prompt 32) should show live status
 
 5. Make sure all existing tests still pass — hardware calls should use mocks in the test environment
 
-Test with mocks (default): Book a session → check logs show mock ADB and Tuya calls. End session → check deactivation calls logged. Transfer → check both deactivation and activation.
+Test with mocks (default): Book a session → check logs show mock ADB and Tuya sync box calls. End session → check deactivation calls logged. Transfer → check both deactivation and activation.
 
 Commit: "Hardware control wired into session lifecycle"
 ```
@@ -891,7 +894,7 @@ Implement power failure handling:
    - Mark active sessions as POWER_INTERRUPTED
    - Call adbService.setBrightness(stationId, 50) for active stations
    - Call adbService.powerOff(stationId) for unused stations
-   - Call tuyaService.turnOff(stationId) for unused stations
+   - Call tuyaService.turnOff(stationId) for unused stations (sync box LEDs off)
    - Create SecurityEvent type POWER_LOSS
    - Emit power:status WebSocket event to all clients
    - Return { sessionsPreserved: count, timestamp }
@@ -899,7 +902,7 @@ Implement power failure handling:
 2. POST /api/system/power-restore
    - Find all POWER_INTERRUPTED sessions
    - Restore each: set status back to ACTIVE, set remaining time from remainingAtPowerLoss
-   - Re-activate hardware: adbService.switchToHdmi + setBrightness(100), tuyaService.setSyncMode
+   - Re-activate hardware: adbService.switchToHdmi + setBrightness(100), tuyaService.setHdmiSync
    - Resume the timer service for restored sessions
    - Create SecurityEvent type POWER_RESTORE
    - Emit power:status WebSocket event
@@ -1028,7 +1031,7 @@ Commit: "Full integration test passed — Stages 4-10 complete" && git push orig
 | 5 | 28–29 | Customer replay PWA (auth code, clip list, download) |
 | 6 | 30–32 | Owner dashboard (revenue, history, security, system health) |
 | 7 | 33–35 | M-Pesa payments (service module, endpoints, kiosk UI) |
-| 8 | 36–38 | Hardware control (real ADB, real Tuya, session lifecycle wiring) |
+| 8 | 36–38 | Hardware control (real ADB, Tuya HDMI Sync Box, session lifecycle wiring) |
 | 9 | 39–44 | Video pipeline (capture, clips, YAMNet, security cameras, stitching) |
 | 10 | 45–47 | Power management, internet failover, final integration test |
 
@@ -1045,7 +1048,7 @@ Commit: "Full integration test passed — Stages 4-10 complete" && git push orig
 > - TV footage lives in a tmpfs (RAM) ring buffer. Extract clips immediately when the post-roll window closes — the buffer will overwrite.
 > - Process clips during the match in the background. By match end, everything should already be done.
 > - The clip queue is a FIFO: oldest event first. Workers wake via PostgreSQL LISTEN/NOTIFY, not polling.
-> - YuNet (built into OpenCV) and FER MobileNet run on CPU only — no GPU required. The N100's Quick Sync handles H.264 encode.
+> - YuNet (built into OpenCV) and FER MobileNet run on CPU only — no GPU required. The i5-13420H's Quick Sync Gen 13 handles H.264 encode.
 > - All session footage is deleted 1 hour after the session ends. Processing must finish well within that window.
 >
 > **How to use these prompts:** Start every session with:
@@ -1223,12 +1226,12 @@ Open apps/api/prisma/schema.prisma. Do not modify any existing models or enums. 
 
 8. Add to Station model (SPEC §5):
    - webcamDevice (String?) — e.g. "/dev/video2"
-   - analysisWebcamDevice (String?) — the 120fps Stage 3 camera; only set on the one slow-mo station
+   - analysisWebcamDevice (String?) — 120fps webcam device on ALL stations (all 4 stations run at 120fps)
 
 9. Add to Settings model (SPEC §5 — use these exact names and defaults):
    - replayTTLMinutes (Int, default 60)
    - yamnetConfidenceThreshold (Float, default 0.55)
-   - tvRingBufferSeconds (Int, default 120)
+   - tvRingBufferSeconds (Int, default 180)
    - clipPreRollSeconds (Int, default 10)
    - clipPostRollSeconds (Int, default 25)        ← 25, not 15
    - eventMergeWindowSeconds (Int, default 25)    ← 25, not 8
@@ -1279,7 +1282,7 @@ Read docs/WORKING-RULES.md and docs/SPEC.md (Video Pipeline Architecture section
 
 1. Update/refactor services/video-pipeline/capture/ring_buffer.py (create if absent):
    - Class RingBuffer(station_id, buffer_dir)
-   - Segment filenames are sequence numbers: seg_000.ts through seg_059.ts (ffmpeg -segment_wrap 60)
+   - Segment filenames are sequence numbers: seg_000.ts through seg_089.ts (ffmpeg -segment_wrap 90)
    - No prune() method — ffmpeg overwrites automatically.
    - Method get_segments_in_window(start_dt, end_dt) -> list[Path]:
      Read the mtime of every seg_NNN.ts in the buffer dir, sort by mtime ASC,
@@ -1292,12 +1295,14 @@ Read docs/WORKING-RULES.md and docs/SPEC.md (Video Pipeline Architecture section
    - Output directory: /run/lounge/tv{station_id}/ (create with mkdir -p at startup)
    - ffmpeg command (matches SPEC §7 exactly):
        ffmpeg -hide_banner -loglevel warning \
-         -rtsp_transport tcp -i rtsp://tv{station_id}.local/stream \
+         -f v4l2 -input_format h264 \
+         -video_size 1920x1080 \
+         -i /dev/video_tv{station_id} \
          -c copy \
          -f segment \
          -segment_time 2 \
          -segment_format mpegts \
-         -segment_wrap 60 \
+         -segment_wrap 90 \
          -reset_timestamps 1 \
          /run/lounge/tv{station_id}/seg_%03d.ts
    - No transcoding. No custom pruning logic.
@@ -1318,18 +1323,18 @@ Read docs/WORKING-RULES.md and docs/SPEC.md (Video Pipeline Architecture section
    - Or leave it as the default tmpfs at /run with a subdirectory — Debian /run is already tmpfs
 
 6. Refactor/remove tests:
-   - services/video-pipeline/tests/test_ring_buffer.py: remove any prune() tests. Add/keep tests for get_segments_in_window() using os.utime to set mtimes, and assert ordering by mtime is correct even when filename sequence wraps (e.g. seg_058.ts written AFTER seg_000.ts).
+   - services/video-pipeline/tests/test_ring_buffer.py: remove any prune() tests. Add/keep tests for get_segments_in_window() using os.utime to set mtimes, and assert ordering by mtime is correct even when filename sequence wraps (e.g. seg_088.ts written AFTER seg_000.ts).
 
 Run the tests. They must pass.
 
-Commit: "feat(capture): ffmpeg -segment_wrap TV ring buffer in tmpfs (no pruner)"
+Commit: "feat(capture): V4L2 ffmpeg -segment_wrap 90 TV ring buffer in tmpfs (180s, no pruner)"
 ```
 
 ---
 
 ### Prompt 50 — Capture Infrastructure: Webcam and Security Camera Services
 
-**Context:** Webcam footage goes to NVMe (not RAM) because it's larger and doesn't need instant-overwrite semantics. **Only one webcam runs at 120fps** — the Station 4 (or whichever Station row has `analysisWebcamDevice` set) Stage 3 slow-mo camera. Stations 1–3 capture at 720p 60fps. See SPEC.md §7 Webcam Streams: "Station 1-3: 720p 60fps. Station 4: 720p 120fps (Stage 3 slow-mo cam)". Security cameras use 300-second segments. This prompt refactors the existing `services/video-pipeline/security/recorder.py` module rather than creating a parallel `security_capture.py`.
+**Context:** Webcam footage goes to NVMe (not RAM) because it's larger and doesn't need instant-overwrite semantics. **All 4 stations run their webcams at 720p 120fps** for real slow-motion capability on every station. The i5-13420H (8 cores) has sufficient headroom for this. See SPEC.md §7 Webcam Streams. Security cameras use 300-second segments. This prompt refactors the existing `services/video-pipeline/security/recorder.py` module rather than creating a parallel `security_capture.py`.
 
 ```text
 Read docs/WORKING-RULES.md and docs/SPEC.md (Video Pipeline Architecture → Webcam Streams and Security Cameras subsections). Also read services/video-pipeline/security/recorder.py before editing — refactor in place.
@@ -1339,15 +1344,11 @@ Read docs/WORKING-RULES.md and docs/SPEC.md (Video Pipeline Architecture → Web
    - At startup AND whenever the active session changes: query the API
      (GET /api/stations/:id) to read `webcamDevice` and `analysisWebcamDevice`
      from the Station row. Do not read devices from environment.
-   - Frame rate selection per SPEC §7:
-       if this station's Station row has analysisWebcamDevice set (the Stage 3 slow-mo cam):
-         framerate = 120
-       else:
-         framerate = 60
+   - Frame rate: all stations run at 120fps per SPEC §7.
    - ffmpeg command:
        ffmpeg -hide_banner -loglevel warning \
          -f v4l2 -input_format h264 \
-         -video_size 1280x720 -framerate {framerate} \
+         -video_size 1280x720 -framerate 120 \
          -i {webcamDevice} \
          -c copy \
          -f segment \
@@ -1384,8 +1385,7 @@ Read docs/WORKING-RULES.md and docs/SPEC.md (Video Pipeline Architecture → Web
 
 4. Write tests in services/video-pipeline/tests/test_webcam_capture.py:
    - Mock the ffmpeg subprocess and API calls.
-   - Assert: a station with analysisWebcamDevice set builds the ffmpeg command with -framerate 120.
-   - Assert: a station WITHOUT analysisWebcamDevice builds with -framerate 60.
+   - Assert: all stations build the ffmpeg command with -framerate 120.
    - Assert: correct output path /var/lounge/webcam{N}/seg_*.ts used.
    - Assert: on session end, ffmpeg keeps running for ~60 additional seconds before SIGTERM.
    - Assert: when no active session, ffmpeg is not running.
@@ -1394,7 +1394,7 @@ Also update/replace tests for the refactored security recorder so they test the 
 
 Run the tests. They must pass.
 
-Commit: "feat(capture): webcam (60fps default, 120fps slow-mo cam) + security recorder refactor"
+Commit: "feat(capture): webcam (120fps all stations) + security recorder refactor"
 ```
 
 ---
@@ -1787,12 +1787,12 @@ Commit: "feat(captions): caption library JSON with 40+ entries and context-aware
 
 ### Prompt 57 — Stage 3 AI Effects Worker: Face Detection, Emotion, Zoom, Slow-Mo
 
-**Context:** CPU-intensive final processing stage. Takes the stitched MP4 from Stage 2 and produces an enhanced clip: (1) YuNet face detection on sampled webcam-PiP frames, (2) FER MobileNet emotion classification, (3) caption selection, (4) rebuild with zoom on the peak face region, (5) real 2× slow-mo derived from the 120fps Station 4 webcam source — **only** when `job.stationId` matches the configured slow-mo station (the one whose `analysisWebcamDevice` is set); otherwise fall back to `minterpolate` fake slow-mo or skip slow-mo entirely, (6) burn in caption text, (7) produce both 16:9 landscape and 9:16 portrait outputs.
+**Context:** CPU-intensive final processing stage. Takes the stitched MP4 from Stage 2 and produces an enhanced clip: (1) YuNet face detection on sampled webcam-PiP frames, (2) FER MobileNet emotion classification, (3) caption selection, (4) rebuild with zoom on the peak face region, (5) real 2× slow-mo derived from the 120fps webcam source — **all 4 stations** capture at 120fps so slow-mo is available everywhere, (6) burn in caption text, (7) produce both 16:9 landscape and 9:16 portrait outputs.
 
 **Critical math:** `setpts=2.0*PTS` *slows* video down (doubles presentation timestamps). `setpts=0.5*PTS` *speeds it up*. SPEC §11 uses `2.0*PTS` everywhere. Do not invert this.
 
 ```text
-Read docs/WORKING-RULES.md and docs/SPEC.md (Video Pipeline → Replay Processing → Stage 3). Slow-mo filter is setpts=2.0*PTS. The slow-mo source requirement is the 120fps webcam on the one station whose Station.analysisWebcamDevice is set — per-station check, not global.
+Read docs/WORKING-RULES.md and docs/SPEC.md (Video Pipeline → Replay Processing → Stage 3). Slow-mo filter is setpts=2.0*PTS. All 4 stations capture webcam at 120fps, so real slow-mo is available on every station.
 
 1. Create services/video-pipeline/workers/ai_effects_worker.py:
 
