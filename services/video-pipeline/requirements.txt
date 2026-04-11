@@ -5,3 +5,12 @@ python-multipart>=0.0.9
 pytest>=8.3.3
 pytest-asyncio>=0.24.0
 anyio>=4.6.2
+opencv-contrib-python
+onnxruntime
+numpy
+pytesseract
+Pillow
+qrcode[pil]
+sdnotify
+psycopg2-binary
+tflite-runtime
