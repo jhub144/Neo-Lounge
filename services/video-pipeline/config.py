@@ -20,6 +20,11 @@ CLIP_COOLDOWN_SECONDS: int = int(os.getenv("CLIP_COOLDOWN_SECONDS", "45"))
 CLIP_BUFFER_BEFORE: int = int(os.getenv("CLIP_BUFFER_BEFORE", "10"))
 CLIP_BUFFER_AFTER: int = int(os.getenv("CLIP_BUFFER_AFTER", "15"))
 
+# Model Paths
+YAMNET_MODEL_PATH: str = os.getenv("YAMNET_MODEL_PATH", "models/yamnet.tflite")
+YUNET_MODEL_PATH: str = os.getenv("YUNET_MODEL_PATH", "models/face_detection_yunet_2023mar.onnx")
+FER_MODEL_PATH: str = os.getenv("FER_MODEL_PATH", "models/fer_mobilenet.onnx")
+
 # Security camera settings
 SECURITY_SEGMENT_MINUTES: int = int(os.getenv("SECURITY_SEGMENT_MINUTES", "15"))
 SECURITY_DISK_LIMIT_GB: float = float(os.getenv("SECURITY_DISK_LIMIT_GB", "100"))

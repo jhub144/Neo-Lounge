@@ -15,9 +15,16 @@ model Station {
   adbAddress       String         @default("")
   tuyaDeviceId     String         @default("")
   captureDevice    String         @default("")
+  webcamDevice         String?
+  analysisWebcamDevice String?
   sessions         Session[]      @relation("StationSessions")
   currentSession   Session?       @relation("CurrentSession", fields: [currentSessionId], references: [id])
   queue            StationQueue[]
+  pendingEvents    PendingEvent[]
+  clipJobs         ClipJob[]
+  gameReplays      GameReplay[]
+  matchState       MatchState?
+  faceSnapshots    FaceSnapshot[]
 }
 
 model Session {
@@ -30,11 +37,19 @@ model Session {
   remainingAtPowerLoss Int?
   status               SessionStatus @default(ACTIVE)
   authCode             String        @unique
+  purgedAt             DateTime?
+  audioBaseline        Float?
+  emotionBaseline      Float?
+  movementBaseline     Float?
   games                Game[]
   replayClips          ReplayClip[]
   station              Station       @relation("StationSessions", fields: [stationId], references: [id])
   stationsCurrent      Station[]     @relation("CurrentSession")
   transactions         Transaction[]
+  pendingEvents        PendingEvent[]
+  clipJobs             ClipJob[]
+  gameReplays          GameReplay[]
+  faceSnapshots        FaceSnapshot[]
 }
 
 model Transaction {
@@ -50,13 +65,14 @@ model Transaction {
 }
 
 model Game {
-  id          Int            @id @default(autoincrement())
-  sessionId   Int
-  startTime   DateTime       @default(now())
-  endTime     DateTime?
-  endMethod   GameEndMethod?
-  session     Session        @relation(fields: [sessionId], references: [id])
-  replayClips ReplayClip[]
+  id            Int            @id @default(autoincrement())
+  sessionId     Int
+  startTime     DateTime       @default(now())
+  endTime       DateTime?
+  endMethod     GameEndMethod?
+  session       Session        @relation(fields: [sessionId], references: [id])
+  replayClips   ReplayClip[]
+  pendingEvents PendingEvent[]
 }
 
 model ReplayClip {
@@ -115,19 +131,136 @@ model Staff {
 }
 
 model Settings {
-  id                        Int    @id @default(autoincrement())
-  baseHourlyRate            Int    @default(300)
-  openingTime               String @default("08:00")
-  closingTime               String @default("22:00")
-  replayTTLMinutes          Int    @default(60)
-  powerSaveBrightness       Int    @default(50)
-  yamnetConfidenceThreshold Float  @default(0.7)
-  clipBufferBefore          Int    @default(10)
-  clipBufferAfter           Int    @default(15)
-  clipCooldownSeconds       Int    @default(45)
-  securityClipBeforeMinutes Int    @default(5)
-  securityClipAfterMinutes  Int    @default(5)
-  securityRetentionDays     Int    @default(14)
+  id                        Int     @id @default(autoincrement())
+  baseHourlyRate            Int     @default(300)
+  openingTime               String  @default("08:00")
+  closingTime               String  @default("22:00")
+  replayTTLMinutes          Int     @default(60)
+  powerSaveBrightness       Int     @default(50)
+  yamnetConfidenceThreshold Float   @default(0.55)
+  clipPreRollSeconds        Int     @default(10)
+  clipPreRollBigSeconds     Int     @default(20)
+  clipPostRollSeconds       Int     @default(25)
+  eventMergeWindowSeconds   Int     @default(25)
+  tvRingBufferSeconds       Int     @default(180)
+  gameAnalysisEnabled       Boolean @default(true)
+  audioDetectionEnabled     Boolean @default(true)
+  replayDetectionThreshold  Float   @default(0.80)
+  alertTempCelsius          Int     @default(80)
+  alertSmsNumber            String  @default("")
+  stage2Enabled             Boolean @default(true)
+  stage3Enabled             Boolean @default(true)
+  microTierMax              Float   @default(0.39)
+  standardTierMax           Float   @default(0.69)
+  microPostRollCap          Int     @default(12)
+  standardPostRollCap       Int     @default(30)
+  bigPostRollCap            Int     @default(45)
+  securityRetentionDays     Int     @default(14)
+}
+
+model PendingEvent {
+  id                Int         @id @default(autoincrement())
+  sessionId         Int
+  stationId         Int
+  gameId            Int
+  eventType         EventType?
+  eventTimestamp    Float
+  source            EventSource
+  audioScore        Float?
+  visualEventScore  Float?
+  faceReactionScore Float?
+  contextMultiplier Float?
+  importance        Float?
+  emotionTransition String?
+  confidence        Float       @default(0)
+  matchMinute       Int?
+  homeScore         Int?
+  awayScore         Int?
+  mergedWithEventId Int?
+  processed         Boolean     @default(false)
+  createdAt         DateTime    @default(now())
+  session           Session     @relation(fields: [sessionId], references: [id])
+  station           Station     @relation(fields: [stationId], references: [id])
+  game              Game        @relation(fields: [gameId], references: [id])
+}
+
+model ClipJob {
+  id               Int             @id @default(autoincrement())
+  sessionId        Int
+  stationId        Int
+  clipStart        Float
+  clipEnd          Float
+  eventTypes       String[]
+  importanceScore  Float           @default(0)
+  tier             ClipTier        @default(MICRO)
+  replayTreatment  ReplayTreatment @default(LIVE_ONLY)
+  dominantEmotion  String?
+  shootoutGroup    String?
+  tvClipPath       String?
+  webcamClipPath   String?
+  gameReplayPath   String?
+  stitchedPath     String?
+  enhancedPath     String?
+  portraitPath     String?
+  status           ClipJobStatus   @default(PENDING)
+  enqueuedAt       DateTime        @default(now())
+  startedAt        DateTime?
+  errorMessage     String?
+  session          Session         @relation(fields: [sessionId], references: [id])
+  station          Station         @relation(fields: [stationId], references: [id])
+}
+
+model GameReplay {
+  id          Int      @id @default(autoincrement())
+  stationId   Int
+  sessionId   Int
+  replayStart Float
+  replayEnd   Float
+  detectedAt  DateTime @default(now())
+  confidence  Float
+  used        Boolean  @default(false)
+  station     Station  @relation(fields: [stationId], references: [id])
+  session     Session  @relation(fields: [sessionId], references: [id])
+}
+
+model MatchState {
+  id              Int      @id @default(autoincrement())
+  stationId       Int      @unique
+  capturedAt      DateTime @default(now())
+  homeScore       Int      @default(0)
+  awayScore       Int      @default(0)
+  matchMinute     Int      @default(0)
+  isReplayShowing Boolean  @default(false)
+  isShootout      Boolean  @default(false)
+  rawOcrText      String   @default("")
+  station         Station  @relation(fields: [stationId], references: [id])
+}
+
+model FaceSnapshot {
+  id                Int      @id @default(autoincrement())
+  sessionId         Int
+  stationId         Int
+  capturedAt        DateTime @default(now())
+  faceCount         Int      @default(0)
+  dominantEmotion   String?
+  emotionConfidence Float?
+  mouthAperture     Float?
+  faceMovement      Float?
+  offFaceMotion     Float?
+  faceX             Int?
+  faceY             Int?
+  faceW             Int?
+  faceH             Int?
+  face2Emotion      String?
+  face2Confidence   Float?
+  face2X            Int?
+  face2Y            Int?
+  face2W            Int?
+  face2H            Int?
+  session           Session  @relation(fields: [sessionId], references: [id])
+  station           Station  @relation(fields: [stationId], references: [id])
+
+  @@index([stationId, sessionId, capturedAt])
 }
 
 model StationQueue {
@@ -208,4 +341,44 @@ enum QueueStatus {
   NOTIFIED
   EXPIRED
   CONVERTED
+}
+
+enum EventType {
+  GOAL_CANDIDATE
+  PENALTY_MISS
+  RED_CARD
+  YELLOW_CARD
+  MATCH_END
+  SCORE_CHANGE
+}
+
+enum EventSource {
+  AUDIO_AI
+  GAME_ANALYZER
+  BOTH
+  FACE_ONLY
+}
+
+enum ClipJobStatus {
+  PENDING
+  EXTRACTING
+  STITCHING
+  ENHANCING
+  READY
+  FAILED
+  STITCH_FALLBACK
+  ENHANCE_FALLBACK
+}
+
+enum ClipTier {
+  MICRO
+  STANDARD
+  BIG
+}
+
+enum ReplayTreatment {
+  LIVE_ONLY
+  REPLAY_ONLY
+  DUAL_BEAT
+  SKIP
 }
